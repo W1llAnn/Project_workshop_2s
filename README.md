@@ -1,8 +1,8 @@
 <div style="text-align: center;">
-<img src="image\free-icon-hamster-11730343-bl.png" alt="Лого" width="200" text-align="center">
+<img src="image\hamster_logoText.svg" alt="Лого" width="200" text-align="center">
 </div>
 
-# 🧠 Habit Tracker — Product & Development Plan
+# <img src="image\hamster_favicon.svg" alt="Лого" width="32" text-align="center"> Habit Tracker — Product & Development Plan
 
 Мы разрабатываем не просто трекер привычек, а систему, которая помогает пользователю формировать устойчивое поведение через аналитику, геймификацию и обратную связь.
 
