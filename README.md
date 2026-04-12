@@ -1,5 +1,6 @@
 <div style="text-align: center;">
-<img src="image\free-icon-hamster-11730343-1.png" alt="Лого" width="200" text-align="center">
+<img src="image\free-icon-hamster-11730343-bl.png" alt="Лого" width="200" text-align="center">
+<img src="image\free-icon-hamster-11730343-w.png" alt="Лого" width="200" text-align="center">
 </div>
 
 # 🧠 Habit Tracker — Product & Development Plan
