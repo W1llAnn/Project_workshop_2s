@@ -1,4 +1,4 @@
-<div style="text-align: center;">
+<div style="align="center";">
 <img src="image\hamster_logoText.svg" alt="Лого" width="200" align="center">
 </div>
 
