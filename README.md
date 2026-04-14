@@ -8,6 +8,8 @@
 
 > 💡 Вместо напоминаний — осознанное понимание своих привычек
 
+<a href="https://docs.google.com/spreadsheets/d/1UG-epm8C5xnCetSX1s6oPI2ncxN-Pg2P/edit?pli=1&gid=1487446538#gid=1487446538">Ссылка на гугл-док нашей команды</a>
+
 </br>
 
 ## Roadmap разработки
