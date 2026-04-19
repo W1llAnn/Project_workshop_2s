@@ -10,6 +10,8 @@
 
 <a href="https://docs.google.com/spreadsheets/d/1UG-epm8C5xnCetSX1s6oPI2ncxN-Pg2P/edit?pli=1&gid=1487446538#gid=1487446538">Ссылка на гугл-док нашей команды</a>
 
+<a href="https://w1llann.github.io/Project_workshop_2s/index.html">Ссылка на презентацию продукта</a>
+
 </br>
 
 ## Roadmap разработки
