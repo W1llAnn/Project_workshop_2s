@@ -15,6 +15,7 @@ __pycache__/
 # Окружение
 .env
 .venv
+.environment
 env/
 venv/
 ENV/
@@ -30,3 +31,5 @@ venv.bak/
 Thumbs.db
 *.zip
 *.rar
+
+data/
