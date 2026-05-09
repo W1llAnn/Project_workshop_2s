@@ -1,5 +1,6 @@
 from django.utils import timezone
-from rest_framework import viewsets
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -23,10 +24,66 @@ class HabitViewSet(viewsets.ModelViewSet):
     - GET /api/habits/{id}/ — получить одну привычку
     - PATCH /api/habits/{id}/ — частично обновить привычку
     - DELETE /api/habits/{id}/ — удалить привычку
+    - POST /api/habits/{id}/complete/ — отметить привычку выполненной
     """
 
     queryset = Habit.objects.all().order_by("-created_at")
     serializer_class = HabitSerializer
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="complete",
+    )
+    def complete(self, request, pk=None):
+        """
+        Отметить привычку выполненной за сегодня.
+
+        Если лог за сегодня уже есть — обновляем его.
+        Если лога за сегодня нет — создаём новый.
+        """
+
+        habit = self.get_object()
+        today = timezone.localdate()
+
+        user = request.user
+
+        if not user.is_authenticated:
+            user = habit.user
+
+        habit_log, created = HabitLog.objects.update_or_create(
+            habit=habit,
+            user=user,
+            log_date=today,
+            defaults={
+                "status": "done",
+                "value": habit.target_value,
+                "duration_minutes": (
+                    habit.target_value
+                    if habit.target_type == "minutes"
+                    else 0
+                ),
+            },
+        )
+
+        response_status = (
+            status.HTTP_201_CREATED
+            if created
+            else status.HTTP_200_OK
+        )
+
+        return Response(
+            {
+                "message": "Habit marked as completed",
+                "habit_id": habit.id,
+                "habit_title": habit.title,
+                "log_id": habit_log.id,
+                "log_date": habit_log.log_date,
+                "status": habit_log.status,
+                "created": created,
+            },
+            status=response_status,
+        )
 
 
 class HabitLogViewSet(viewsets.ModelViewSet):
