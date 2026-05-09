@@ -1,7 +1,13 @@
 from rest_framework import viewsets
 
-from .models import Habit, HabitLog
-from .serializers import HabitLogSerializer, HabitSerializer
+from .models import Habit, HabitLog, HabitSchedule, Tag, TagCategory
+from .serializers import (
+    HabitLogSerializer,
+    HabitScheduleSerializer,
+    HabitSerializer,
+    TagCategorySerializer,
+    TagSerializer,
+)
 
 
 class HabitViewSet(viewsets.ModelViewSet):
@@ -34,3 +40,44 @@ class HabitLogViewSet(viewsets.ModelViewSet):
 
     queryset = HabitLog.objects.all().order_by("-log_date", "-created_at")
     serializer_class = HabitLogSerializer
+
+class HabitScheduleViewSet(viewsets.ModelViewSet):
+    """
+    API для расписаний привычек.
+
+    Например:
+    - ежедневно
+    - еженедельно
+    - по конкретным дням недели
+    """
+
+    queryset = HabitSchedule.objects.all()
+    serializer_class = HabitScheduleSerializer
+
+
+class TagCategoryViewSet(viewsets.ModelViewSet):
+    """
+    API для категорий тегов.
+
+    Например:
+    - Здоровье
+    - Осознанность
+    - Продуктивность
+    """
+
+    queryset = TagCategory.objects.all().order_by("name")
+    serializer_class = TagCategorySerializer
+
+
+class TagViewSet(viewsets.ModelViewSet):
+    """
+    API для тегов привычек.
+
+    Например:
+    - Фитнес
+    - Сон
+    - Медитация
+    """
+
+    queryset = Tag.objects.all().order_by("name")
+    serializer_class = TagSerializer

@@ -1,7 +1,6 @@
 from rest_framework import serializers
 
-from .models import Habit, HabitLog
-
+from .models import Habit, HabitLog, HabitSchedule, Tag, TagCategory
 
 class HabitSerializer(serializers.ModelSerializer):
     """
@@ -60,4 +59,80 @@ class HabitLogSerializer(serializers.ModelSerializer):
             "id",
             "created_at",
             "updated_at",
+        ]
+
+
+class HabitScheduleSerializer(serializers.ModelSerializer):
+    """
+    Serializer для расписания привычки.
+
+    Нужен, чтобы описывать частоту выполнения:
+    ежедневно, еженедельно, дни недели, период действия.
+    """
+
+    class Meta:
+        model = HabitSchedule
+        fields = [
+            "id",
+            "habit",
+            "frequency_type",
+            "days_of_week",
+            "times_per_period",
+            "reminder_time",
+            "start_date",
+            "end_date",
+        ]
+        read_only_fields = [
+            "id",
+        ]
+
+
+class TagCategorySerializer(serializers.ModelSerializer):
+    """
+    Serializer для категории тегов.
+
+    Например:
+    - Здоровье
+    - Осознанность
+    - Продуктивность
+    """
+
+    class Meta:
+        model = TagCategory
+        fields = [
+            "id",
+            "parent",
+            "name",
+            "slug",
+            "created_at",
+        ]
+        read_only_fields = [
+            "id",
+            "created_at",
+        ]
+
+
+class TagSerializer(serializers.ModelSerializer):
+    """
+    Serializer для тега привычки.
+
+    Например:
+    - Фитнес
+    - Сон
+    - Учёба
+    - Медитация
+    """
+
+    class Meta:
+        model = Tag
+        fields = [
+            "id",
+            "category",
+            "name",
+            "slug",
+            "created_at",
+        ]
+        read_only_fields = [
+            "id",
+            "created_at",
         ]
