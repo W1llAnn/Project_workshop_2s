@@ -1,6 +1,8 @@
+from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
+    DashboardAPIView,
     HabitLogViewSet,
     HabitScheduleViewSet,
     HabitViewSet,
@@ -40,4 +42,12 @@ router.register(
     basename="tag",
 )
 
-urlpatterns = router.urls
+urlpatterns = [
+    path(
+        "dashboard/",
+        DashboardAPIView.as_view(),
+        name="dashboard",
+    ),
+]
+
+urlpatterns += router.urls

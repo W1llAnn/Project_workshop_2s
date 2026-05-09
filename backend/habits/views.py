@@ -1,6 +1,9 @@
+from django.utils import timezone
 from rest_framework import viewsets
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .models import Habit, HabitLog, HabitSchedule, Tag, TagCategory
+from .models import Habit, HabitLog, HabitSchedule, Tag, TagCategory, UserProfile
 from .serializers import (
     HabitLogSerializer,
     HabitScheduleSerializer,
@@ -40,6 +43,7 @@ class HabitLogViewSet(viewsets.ModelViewSet):
 
     queryset = HabitLog.objects.all().order_by("-log_date", "-created_at")
     serializer_class = HabitLogSerializer
+
 
 class HabitScheduleViewSet(viewsets.ModelViewSet):
     """
@@ -81,3 +85,102 @@ class TagViewSet(viewsets.ModelViewSet):
 
     queryset = Tag.objects.all().order_by("name")
     serializer_class = TagSerializer
+
+
+class DashboardAPIView(APIView):
+    """
+    API для главного дашборда.
+
+    Возвращает:
+    - профиль пользователя
+    - статистику по привычкам
+    - список активных привычек на сегодня
+    """
+
+    def get(self, request):
+        user = request.user
+
+        if not user.is_authenticated:
+            user = None
+
+        if user is None:
+            first_habit = Habit.objects.select_related("user").first()
+
+            if first_habit is None:
+                return Response(
+                    {
+                        "profile": None,
+                        "stats": {
+                            "active_habits_count": 0,
+                            "completed_today_count": 0,
+                            "daily_progress": 0,
+                        },
+                        "today_habits": [],
+                    }
+                )
+
+            user = first_habit.user
+
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+
+        today = timezone.localdate()
+
+        active_habits = Habit.objects.filter(
+            user=user,
+            is_active=True,
+        ).order_by("created_at")
+
+        completed_today_habit_ids = set(
+            HabitLog.objects.filter(
+                user=user,
+                log_date=today,
+                status="done",
+            ).values_list("habit_id", flat=True)
+        )
+
+        active_habits_count = active_habits.count()
+        completed_today_count = len(completed_today_habit_ids)
+
+        if active_habits_count == 0:
+            daily_progress = 0
+        else:
+            daily_progress = round(
+                completed_today_count / active_habits_count * 100
+            )
+
+        today_habits = []
+
+        for habit in active_habits:
+            today_habits.append(
+                {
+                    "id": habit.id,
+                    "title": habit.title,
+                    "description": habit.description,
+                    "icon": habit.icon,
+                    "color": habit.color,
+                    "target_type": habit.target_type,
+                    "target_value": habit.target_value,
+                    "target_unit": habit.target_unit,
+                    "is_completed_today": habit.id in completed_today_habit_ids,
+                }
+            )
+
+        return Response(
+            {
+                "profile": {
+                    "username": user.username,
+                    "level": profile.level,
+                    "xp": profile.xp,
+                    "current_streak": profile.current_streak,
+                    "best_streak": profile.best_streak,
+                    "mascot_name": profile.mascot_name,
+                    "mascot_mood": profile.mascot_mood,
+                },
+                "stats": {
+                    "active_habits_count": active_habits_count,
+                    "completed_today_count": completed_today_count,
+                    "daily_progress": daily_progress,
+                },
+                "today_habits": today_habits,
+            }
+        )
