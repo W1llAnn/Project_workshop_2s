@@ -298,7 +298,8 @@
         .stat-card,
         .progress-box,
         .calendar-board,
-        .calendar-side {
+        .calendar-side,
+        .profile-card {
             background: white;
             border-radius: 26px;
             box-shadow: var(--shadow-soft);
@@ -509,6 +510,18 @@
             align-items: center;
             flex-wrap: wrap;
             justify-content: flex-end;
+        }
+
+        .toolbar {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .toolbar input,
+        .toolbar select {
+            height: 44px;
         }
 
         .progress-ring-wrap {
@@ -865,6 +878,94 @@
         .bar.strong { background: var(--green); }
         .bar.low { background: #fde68a; }
 
+        .profile-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 22px;
+        }
+
+        .profile-card {
+            padding: 26px;
+        }
+
+        .profile-main {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            margin-bottom: 22px;
+        }
+
+        .profile-big-avatar {
+            width: 88px;
+            height: 88px;
+            border-radius: 28px;
+            background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+            display: grid;
+            place-items: center;
+            font-size: 44px;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .profile-line {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 13px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .profile-line span {
+            color: var(--muted);
+            font-weight: 800;
+        }
+
+        .profile-line strong {
+            text-align: right;
+        }
+
+        .achievement-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .achievement-card {
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 18px;
+            background: #f9fafb;
+            display: flex;
+            gap: 14px;
+            align-items: center;
+        }
+
+        .achievement-card.unlocked {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+
+        .achievement-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 16px;
+            display: grid;
+            place-items: center;
+            background: white;
+            font-size: 24px;
+            flex: 0 0 auto;
+        }
+
+        .achievement-title {
+            font-weight: 950;
+            margin-bottom: 4px;
+        }
+
+        .achievement-text {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.35;
+        }
+
         .detail-layout {
             display: grid;
             grid-template-columns: 1fr;
@@ -1126,7 +1227,8 @@
             .hero,
             .main-grid,
             .analytics-grid,
-            .calendar-layout {
+            .calendar-layout,
+            .profile-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -1176,7 +1278,9 @@
             }
 
             .form-row,
-            .template-grid {
+            .template-grid,
+            .achievement-grid,
+            .toolbar {
                 grid-template-columns: 1fr;
             }
 
@@ -1222,6 +1326,7 @@
                 <button class="nav-tab" id="tab-calendar" type="button" onclick="showView('calendar')">Календарь</button>
                 <button class="nav-tab" id="tab-analytics" type="button" onclick="showView('analytics')">Аналитика</button>
                 <button class="nav-tab" id="tab-habits" type="button" onclick="showView('habits')">Привычки</button>
+                <button class="nav-tab" id="tab-profile" type="button" onclick="showView('profile')">Профиль</button>
                 <button class="nav-tab" id="tab-detail" type="button" onclick="openFirstHabitDetail()">Детали</button>
             </div>
 
@@ -1486,13 +1591,102 @@
                 <div class="panel-head">
                     <div>
                         <div class="panel-title">Мои привычки</div>
-                        <div class="subtitle">Все активные привычки.</div>
+                        <div class="subtitle">Ищи, фильтруй, редактируй и отключай привычки.</div>
                     </div>
                     <button class="btn" type="button" onclick="openCreateHabitModal()">+ Добавить</button>
                 </div>
 
+                <div class="toolbar">
+                    <input
+                        id="habitSearchInput"
+                        type="text"
+                        placeholder="Поиск по названию..."
+                        oninput="applyHabitFilters()"
+                    />
+
+                    <select id="habitStatusFilter" onchange="applyHabitFilters()">
+                        <option value="all">Все</option>
+                        <option value="done">Выполненные сегодня</option>
+                        <option value="todo">Невыполненные</option>
+                    </select>
+
+                    <select id="habitTypeFilter" onchange="applyHabitFilters()">
+                        <option value="all">Все типы</option>
+                        <option value="check">Отметка</option>
+                        <option value="minutes">Минуты</option>
+                        <option value="count">Количество</option>
+                    </select>
+                </div>
+
                 <div class="habit-list" id="allHabitList"></div>
             </div>
+        </section>
+
+        <section class="view" id="view-profile">
+            <section class="hero-card" style="margin-bottom: 22px;">
+                <div class="hamster-box">🐹</div>
+                <div>
+                    <h2>Профиль</h2>
+                    <div class="subtitle">Твой аккаунт, прогресс, уровень и достижения.</div>
+                </div>
+            </section>
+
+            <section class="profile-grid">
+                <div class="profile-card">
+                    <div class="profile-main">
+                        <div class="profile-big-avatar">🐹</div>
+                        <div>
+                            <h2 id="profileUsername">Пользователь</h2>
+                            <div class="subtitle" id="profileEmail">email</div>
+                        </div>
+                    </div>
+
+                    <div class="profile-line">
+                        <span>Уровень</span>
+                        <strong id="profileLevel">0</strong>
+                    </div>
+
+                    <div class="profile-line">
+                        <span>XP</span>
+                        <strong id="profileXp">0</strong>
+                    </div>
+
+                    <div class="profile-line">
+                        <span>Текущая серия</span>
+                        <strong id="profileCurrentStreak">0</strong>
+                    </div>
+
+                    <div class="profile-line">
+                        <span>Лучшая серия</span>
+                        <strong id="profileBestStreak">0</strong>
+                    </div>
+
+                    <div class="profile-line">
+                        <span>Хомяк</span>
+                        <strong id="profileMascotName">Хома</strong>
+                    </div>
+
+                    <div class="profile-line">
+                        <span>Настроение</span>
+                        <strong id="profileMascotMood">neutral</strong>
+                    </div>
+
+                    <br />
+
+                    <a class="btn danger" href="/api/logout/">Выйти из аккаунта</a>
+                </div>
+
+                <div class="profile-card">
+                    <div class="panel-head">
+                        <div>
+                            <div class="panel-title">Достижения</div>
+                            <div class="subtitle">Открываются по мере прогресса.</div>
+                        </div>
+                    </div>
+
+                    <div class="achievement-grid" id="achievementGrid"></div>
+                </div>
+            </section>
         </section>
 
         <section class="view" id="view-detail">
@@ -1565,8 +1759,8 @@
         <div class="modal">
             <div class="modal-header">
                 <div>
-                    <div class="modal-title">Новая привычка</div>
-                    <div class="subtitle">Выбери шаблон или заполни вручную.</div>
+                    <div class="modal-title" id="habitModalTitle">Новая привычка</div>
+                    <div class="subtitle" id="habitModalSubtitle">Выбери шаблон или заполни вручную.</div>
                 </div>
                 <button class="close-btn" type="button" onclick="closeCreateHabitModal()">×</button>
             </div>
@@ -1640,7 +1834,7 @@
 
                 <div class="modal-actions">
                     <button class="btn secondary" type="button" onclick="closeCreateHabitModal()">Отмена</button>
-                    <button class="btn" type="submit">Создать</button>
+                    <button class="btn" id="habitSubmitButton" type="submit">Создать</button>
                 </div>
             </form>
         </div>
@@ -1651,6 +1845,8 @@
         let currentUserId = null;
         let selectedHabitId = null;
         let toastTimer = null;
+        let allHabitsCache = [];
+        let editingHabitId = null;
 
         const todayDate = new Date();
         let currentCalendarYear = todayDate.getFullYear();
@@ -1743,6 +1939,15 @@
             document.getElementById("currentStreak").textContent = profile.current_streak;
             document.getElementById("xpCounter").textContent = `${profile.xp} XP`;
             document.getElementById("analyticsXP").textContent = profile.xp;
+
+            document.getElementById("profileUsername").textContent = profile.username;
+            document.getElementById("profileEmail").textContent = profile.email || "Почта не указана";
+            document.getElementById("profileLevel").textContent = profile.level;
+            document.getElementById("profileXp").textContent = `${profile.xp} XP`;
+            document.getElementById("profileCurrentStreak").textContent = `${profile.current_streak} дней`;
+            document.getElementById("profileBestStreak").textContent = `${profile.best_streak} дней`;
+            document.getElementById("profileMascotName").textContent = profile.mascot_name;
+            document.getElementById("profileMascotMood").textContent = profile.mascot_mood;
         }
 
         function renderDashboardStats(stats) {
@@ -1770,8 +1975,11 @@
         }
 
         function renderHabits(habits) {
-            renderHabitList("dashboardHabitList", habits);
-            renderHabitList("allHabitList", habits);
+            allHabitsCache = habits || [];
+
+            renderHabitList("dashboardHabitList", allHabitsCache);
+            applyHabitFilters();
+            renderAchievements();
         }
 
         function renderHabitList(containerId, habits) {
@@ -1822,7 +2030,9 @@
 
                     <div class="habit-actions">
                         <button class="btn secondary" type="button" onclick="openHabitDetail(${habit.id})">Подробнее</button>
+                        <button class="btn secondary" type="button" onclick="openEditHabitModal(${habit.id})">Редактировать</button>
                         ${completeButton}
+                        <button class="btn danger" type="button" onclick="disableHabit(${habit.id})">Отключить</button>
                     </div>
                 `;
 
@@ -2129,7 +2339,7 @@
                     throw new Error(await response.text());
                 }
 
-                showToast("Привычка выполнена.", "success");
+                showToast("🐹 Отлично! Привычка выполнена.", "success");
 
                 await loadDashboard();
 
@@ -2179,8 +2389,14 @@
             };
 
             try {
-                const response = await fetch("/api/habits/", {
-                    method: "POST",
+                const url = editingHabitId
+                    ? `/api/habits/${editingHabitId}/`
+                    : "/api/habits/";
+
+                const method = editingHabitId ? "PATCH" : "POST";
+
+                const response = await fetch(url, {
+                    method: method,
                     headers: {
                         "Content-Type": "application/json",
                         "X-CSRFToken": getCsrfToken(),
@@ -2192,16 +2408,207 @@
                     throw new Error(await response.text());
                 }
 
+                const wasEditing = Boolean(editingHabitId);
+
                 closeCreateHabitModal();
                 resetCreateHabitForm();
 
                 await loadDashboard();
                 showView("dashboard");
-                showToast("Привычка создана.", "success");
+
+                showToast(
+                    wasEditing
+                        ? "✏️ Привычка обновлена."
+                        : "🎉 Привычка создана.",
+                    "success"
+                );
+
+                editingHabitId = null;
             } catch (error) {
                 console.error(error);
-                showToast("Не удалось создать привычку.", "error");
+                showToast(
+                    editingHabitId
+                        ? "Не удалось обновить привычку."
+                        : "Не удалось создать привычку.",
+                    "error"
+                );
             }
+        }
+
+        function applyHabitFilters() {
+            const searchValue = document
+                .getElementById("habitSearchInput")
+                ?.value
+                .trim()
+                .toLowerCase() || "";
+
+            const statusFilter = document.getElementById("habitStatusFilter")?.value || "all";
+            const typeFilter = document.getElementById("habitTypeFilter")?.value || "all";
+
+            let filteredHabits = [...allHabitsCache];
+
+            if (searchValue) {
+                filteredHabits = filteredHabits.filter((habit) => {
+                    return habit.title.toLowerCase().includes(searchValue);
+                });
+            }
+
+            if (statusFilter === "done") {
+                filteredHabits = filteredHabits.filter((habit) => habit.is_completed_today);
+            }
+
+            if (statusFilter === "todo") {
+                filteredHabits = filteredHabits.filter((habit) => !habit.is_completed_today);
+            }
+
+            if (typeFilter !== "all") {
+                filteredHabits = filteredHabits.filter((habit) => habit.target_type === typeFilter);
+            }
+
+            renderHabitList("allHabitList", filteredHabits);
+        }
+
+        function openEditHabitModal(habitId) {
+            const habit = allHabitsCache.find((item) => item.id === habitId);
+
+            if (!habit) {
+                showToast("Привычка не найдена.", "error");
+                return;
+            }
+
+            editingHabitId = habitId;
+
+            document.getElementById("habitModalTitle").textContent = "Редактировать привычку";
+            document.getElementById("habitModalSubtitle").textContent = "Измени поля и сохрани.";
+            document.getElementById("habitSubmitButton").textContent = "Сохранить";
+
+            document.getElementById("createTitle").value = habit.title;
+            document.getElementById("createDescription").value = habit.description || "";
+            document.getElementById("createIcon").value = habit.icon || "check";
+            document.getElementById("createTargetType").value = habit.target_type || "check";
+            document.getElementById("createTargetValue").value = habit.target_value || 1;
+            document.getElementById("createTargetUnit").value = habit.target_unit || "";
+            document.getElementById("createColor").value = habit.color || "#4CAF50";
+
+            document.getElementById("createHabitModal").style.display = "flex";
+        }
+
+        async function disableHabit(habitId) {
+            const habit = allHabitsCache.find((item) => item.id === habitId);
+
+            if (!habit) {
+                showToast("Привычка не найдена.", "error");
+                return;
+            }
+
+            const confirmed = confirm(
+                `Отключить привычку "${habit.title}"?\n\nИстория сохранится, но привычка исчезнет из активных.`
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/habits/${habitId}/`, {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCsrfToken(),
+                    },
+                    body: JSON.stringify({
+                        is_active: false,
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                await loadDashboard();
+
+                showToast("Привычка отключена.", "success");
+            } catch (error) {
+                console.error(error);
+                showToast("Не удалось отключить привычку.", "error");
+            }
+        }
+
+        function renderAchievements() {
+            const profile = dashboardData?.profile;
+            const stats = dashboardData?.stats;
+            const habits = dashboardData?.today_habits || [];
+
+            const completedToday = stats?.completed_today_count || 0;
+            const totalHabits = stats?.active_habits_count || 0;
+            const progress = stats?.daily_progress || 0;
+            const xp = profile?.xp || 0;
+            const streak = profile?.current_streak || 0;
+
+            const achievements = [
+                {
+                    icon: "🌱",
+                    title: "Первый шаг",
+                    text: "Создать первую привычку",
+                    unlocked: totalHabits >= 1,
+                },
+                {
+                    icon: "✅",
+                    title: "Первое выполнение",
+                    text: "Выполнить хотя бы одну привычку",
+                    unlocked: completedToday >= 1,
+                },
+                {
+                    icon: "🔥",
+                    title: "Идеальный день",
+                    text: "Закрыть 100% привычек за день",
+                    unlocked: progress === 100 && totalHabits > 0,
+                },
+                {
+                    icon: "⭐",
+                    title: "Опытный хомяк",
+                    text: "Набрать хотя бы 100 XP",
+                    unlocked: xp >= 100,
+                },
+                {
+                    icon: "🏆",
+                    title: "Серия",
+                    text: "Держать серию 3 дня",
+                    unlocked: streak >= 3,
+                },
+                {
+                    icon: "📚",
+                    title: "Коллекционер",
+                    text: "Создать 5 привычек",
+                    unlocked: habits.length >= 5,
+                },
+            ];
+
+            const grid = document.getElementById("achievementGrid");
+
+            if (!grid) {
+                return;
+            }
+
+            grid.innerHTML = "";
+
+            achievements.forEach((achievement) => {
+                const card = document.createElement("div");
+                card.className = `achievement-card ${achievement.unlocked ? "unlocked" : ""}`;
+
+                card.innerHTML = `
+                    <div class="achievement-icon">${achievement.icon}</div>
+                    <div>
+                        <div class="achievement-title">
+                            ${achievement.unlocked ? "✓ " : "○ "}
+                            ${achievement.title}
+                        </div>
+                        <div class="achievement-text">${achievement.text}</div>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
         }
 
         function showView(viewName) {
@@ -2225,6 +2632,7 @@
                 calendar: "Календарь",
                 analytics: "Аналитика",
                 habits: "Мои привычки",
+                profile: "Профиль",
                 detail: "Детали привычки",
             };
 
@@ -2244,7 +2652,16 @@
         }
 
         function openCreateHabitModal() {
+            editingHabitId = null;
+
+            document.getElementById("habitModalTitle").textContent = "Новая привычка";
+            document.getElementById("habitModalSubtitle").textContent = "Выбери шаблон или заполни вручную.";
+            document.getElementById("habitSubmitButton").textContent = "Создать";
+
+            resetCreateHabitForm();
+
             document.getElementById("createHabitModal").style.display = "flex";
+
             setTimeout(() => {
                 document.getElementById("createTitle").focus();
             }, 50);
@@ -2252,6 +2669,7 @@
 
         function closeCreateHabitModal() {
             document.getElementById("createHabitModal").style.display = "none";
+            editingHabitId = null;
         }
 
         function resetCreateHabitForm() {
