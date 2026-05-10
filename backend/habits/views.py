@@ -25,6 +25,7 @@ class HabitViewSet(viewsets.ModelViewSet):
     - PATCH /api/habits/{id}/ — частично обновить привычку
     - DELETE /api/habits/{id}/ — удалить привычку
     - POST /api/habits/{id}/complete/ — отметить привычку выполненной
+    - GET /api/habits/{id}/stats/ — получить статистику по привычке
     """
 
     queryset = Habit.objects.all().order_by("-created_at")
@@ -83,6 +84,92 @@ class HabitViewSet(viewsets.ModelViewSet):
                 "created": created,
             },
             status=response_status,
+        )
+
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="stats",
+    )
+    def stats(self, request, pk=None):
+        """
+        Получить статистику по конкретной привычке.
+
+        Используется для экрана детальной информации о привычке:
+        - сколько всего отметок
+        - сколько выполнено
+        - сколько пропущено
+        - процент выполнения
+        - суммарное время
+        - последние записи выполнения
+        """
+
+        habit = self.get_object()
+
+        user = request.user
+
+        if not user.is_authenticated:
+            user = habit.user
+
+        logs = HabitLog.objects.filter(
+            habit=habit,
+            user=user,
+        ).order_by("-log_date", "-created_at")
+
+        total_logs = logs.count()
+        completed_count = logs.filter(status="done").count()
+        missed_count = logs.filter(status="missed").count()
+        partial_count = logs.filter(status="partial").count()
+        skipped_count = logs.filter(status="skipped").count()
+
+        if total_logs == 0:
+            completion_rate = 0
+        else:
+            completion_rate = round(completed_count / total_logs * 100)
+
+        total_duration_minutes = sum(
+            log.duration_minutes for log in logs
+        )
+
+        recent_logs = []
+
+        for log in logs[:10]:
+            recent_logs.append(
+                {
+                    "id": log.id,
+                    "log_date": log.log_date,
+                    "status": log.status,
+                    "value": log.value,
+                    "duration_minutes": log.duration_minutes,
+                    "note": log.note,
+                    "mood_score": log.mood_score,
+                }
+            )
+
+        return Response(
+            {
+                "habit": {
+                    "id": habit.id,
+                    "title": habit.title,
+                    "description": habit.description,
+                    "target_type": habit.target_type,
+                    "target_value": habit.target_value,
+                    "target_unit": habit.target_unit,
+                    "icon": habit.icon,
+                    "color": habit.color,
+                    "is_active": habit.is_active,
+                },
+                "stats": {
+                    "total_logs": total_logs,
+                    "completed_count": completed_count,
+                    "missed_count": missed_count,
+                    "partial_count": partial_count,
+                    "skipped_count": skipped_count,
+                    "completion_rate": completion_rate,
+                    "total_duration_minutes": total_duration_minutes,
+                },
+                "recent_logs": recent_logs,
+            }
         )
 
 
