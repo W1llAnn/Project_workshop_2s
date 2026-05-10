@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from .auth_views import login_page, logout_page, register_page
 from .views import (
+    CalendarAPIView,
     DashboardAPIView,
     DashboardPageView,
     HabitDetailPageView,
@@ -65,6 +66,11 @@ urlpatterns = [
         "dashboard/",
         DashboardAPIView.as_view(),
         name="dashboard",
+    ),
+    path(
+        "calendar/",
+        CalendarAPIView.as_view(),
+        name="calendar",
     ),
     path(
         "app/",

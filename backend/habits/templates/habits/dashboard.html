@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>HabitHamster — MVP</title>
+    <title>HabitHamster</title>
 
     <style>
         * {
@@ -22,21 +22,22 @@
             --purple-soft: #f3e8ff;
             --red: #ef4444;
             --red-soft: #fee2e2;
-            --text: #1f2937;
+            --text: #172033;
             --muted: #6b7280;
             --border: #e5e7eb;
-            --bg: #f7f7f4;
+            --bg: #f7f7f3;
             --card: #ffffff;
-            --shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
-            --shadow-soft: 0 8px 24px rgba(15, 23, 42, 0.06);
+            --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+            --shadow-soft: 0 10px 25px rgba(15, 23, 42, 0.06);
         }
 
         body {
             margin: 0;
+            min-height: 100vh;
             font-family: Arial, sans-serif;
             background:
-                radial-gradient(circle at top left, #ecfdf5 0, transparent 35%),
-                radial-gradient(circle at top right, #fff7ed 0, transparent 30%),
+                radial-gradient(circle at 10% 0%, #dcfce7 0, transparent 28%),
+                radial-gradient(circle at 95% 5%, #ffedd5 0, transparent 24%),
                 var(--bg);
             color: var(--text);
         }
@@ -51,18 +52,18 @@
         .top-nav {
             position: sticky;
             top: 0;
-            z-index: 30;
-            background: rgba(255, 255, 255, 0.88);
-            backdrop-filter: blur(16px);
-            border-bottom: 1px solid var(--border);
+            z-index: 50;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(18px);
+            border-bottom: 1px solid rgba(229, 231, 235, 0.8);
         }
 
         .top-nav-inner {
-            max-width: 1220px;
+            max-width: 1240px;
             margin: 0 auto;
             padding: 12px 28px;
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
             align-items: center;
             gap: 18px;
         }
@@ -71,37 +72,38 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            font-weight: 900;
-            color: var(--green-dark);
             text-decoration: none;
-            white-space: nowrap;
+            color: var(--green-dark);
+            font-weight: 950;
         }
 
-        .brand-mini-icon {
-            width: 36px;
-            height: 36px;
-            border-radius: 12px;
+        .brand-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 14px;
             display: grid;
             place-items: center;
             background: var(--green-soft);
+            box-shadow: 0 6px 16px rgba(34, 197, 94, 0.14);
         }
 
         .nav-tabs {
+            justify-self: center;
             display: flex;
-            background: #f3f4f6;
-            border-radius: 14px;
-            padding: 5px;
             gap: 4px;
+            padding: 5px;
+            background: #f3f4f6;
+            border-radius: 16px;
         }
 
         .nav-tab {
             border: none;
             background: transparent;
-            padding: 10px 16px;
-            border-radius: 10px;
+            padding: 10px 15px;
+            border-radius: 12px;
             cursor: pointer;
-            font-weight: 800;
             color: var(--muted);
+            font-weight: 900;
             transition: 0.15s ease;
         }
 
@@ -111,21 +113,21 @@
         }
 
         .nav-tab.active {
-            background: white;
+            background: #ffffff;
             color: var(--green-dark);
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.07);
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
         }
 
         .nav-right {
             display: flex;
-            gap: 10px;
             align-items: center;
+            gap: 9px;
         }
 
         .page {
-            max-width: 1220px;
+            max-width: 1240px;
             margin: 0 auto;
-            padding: 30px 28px 46px;
+            padding: 30px 28px 52px;
         }
 
         .app-header {
@@ -143,24 +145,26 @@
         }
 
         .profile-avatar {
-            width: 62px;
-            height: 62px;
+            width: 64px;
+            height: 64px;
             border-radius: 22px;
-            background: linear-gradient(135deg, #dcfce7, #bbf7d0);
             display: grid;
             place-items: center;
-            font-size: 30px;
+            font-size: 32px;
+            background: linear-gradient(135deg, #dcfce7, #bbf7d0);
             box-shadow: var(--shadow-soft);
         }
 
-        h1,
-        h2,
-        h3 {
+        h1, h2, h3 {
             margin: 0;
         }
 
         h1 {
-            font-size: 32px;
+            font-size: 34px;
+            letter-spacing: -0.04em;
+        }
+
+        h2 {
             letter-spacing: -0.03em;
         }
 
@@ -170,18 +174,11 @@
             line-height: 1.45;
         }
 
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
         .btn {
             border: none;
-            border-radius: 13px;
+            border-radius: 14px;
             padding: 12px 17px;
-            font-weight: 900;
+            font-weight: 950;
             cursor: pointer;
             background: var(--green);
             color: white;
@@ -197,7 +194,7 @@
         .btn:hover {
             transform: translateY(-1px);
             background: var(--green-dark);
-            box-shadow: 0 8px 18px rgba(34, 197, 94, 0.22);
+            box-shadow: 0 9px 18px rgba(34, 197, 94, 0.24);
         }
 
         .btn.secondary {
@@ -257,7 +254,7 @@
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(5px);
+                transform: translateY(6px);
             }
 
             to {
@@ -268,7 +265,7 @@
 
         .hero {
             display: grid;
-            grid-template-columns: 1.6fr 0.9fr;
+            grid-template-columns: 1.55fr 0.85fr;
             gap: 18px;
             margin-bottom: 22px;
         }
@@ -276,7 +273,7 @@
         .hero-card {
             background: linear-gradient(120deg, #f0fdf4, #fff7ed);
             border: 1px solid rgba(34, 197, 94, 0.18);
-            border-radius: 26px;
+            border-radius: 28px;
             padding: 26px;
             box-shadow: var(--shadow-soft);
             display: flex;
@@ -285,10 +282,10 @@
         }
 
         .hamster-box {
-            width: 86px;
-            height: 86px;
+            width: 88px;
+            height: 88px;
             border: 4px solid #111827;
-            border-radius: 24px;
+            border-radius: 26px;
             background: white;
             display: grid;
             place-items: center;
@@ -296,16 +293,19 @@
             flex: 0 0 auto;
         }
 
-        .hero-card h2 {
-            font-size: 26px;
-            letter-spacing: -0.03em;
+        .quick-card,
+        .panel,
+        .stat-card,
+        .progress-box,
+        .calendar-board,
+        .calendar-side {
+            background: white;
+            border-radius: 26px;
+            box-shadow: var(--shadow-soft);
         }
 
         .quick-card {
-            background: white;
-            border-radius: 26px;
             padding: 24px;
-            box-shadow: var(--shadow-soft);
         }
 
         .quick-row {
@@ -321,7 +321,7 @@
             border-radius: 999px;
             padding: 9px 12px;
             cursor: pointer;
-            font-weight: 800;
+            font-weight: 900;
             color: #374151;
         }
 
@@ -343,10 +343,7 @@
         }
 
         .stat-card {
-            background: white;
-            border-radius: 22px;
             padding: 22px;
-            box-shadow: var(--shadow-soft);
             position: relative;
             overflow: hidden;
         }
@@ -354,25 +351,25 @@
         .stat-card::before {
             content: "";
             position: absolute;
+            right: -28px;
+            top: -28px;
             width: 90px;
             height: 90px;
             border-radius: 50%;
-            right: -30px;
-            top: -30px;
             background: #f0fdf4;
         }
 
         .stat-label {
             color: var(--muted);
-            font-size: 13px;
-            font-weight: 800;
+            font-size: 12px;
+            font-weight: 900;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.06em;
         }
 
         .stat-value {
             margin-top: 8px;
-            font-size: 32px;
+            font-size: 34px;
             font-weight: 950;
             letter-spacing: -0.04em;
         }
@@ -383,21 +380,10 @@
             font-size: 14px;
         }
 
-        .green {
-            color: var(--green-dark);
-        }
-
-        .blue {
-            color: var(--blue);
-        }
-
-        .orange {
-            color: var(--orange);
-        }
-
-        .purple {
-            color: var(--purple);
-        }
+        .green { color: var(--green-dark); }
+        .blue { color: var(--blue); }
+        .orange { color: var(--orange); }
+        .purple { color: var(--purple); }
 
         .main-grid {
             display: grid;
@@ -405,11 +391,9 @@
             gap: 22px;
         }
 
-        .panel {
-            background: white;
-            border-radius: 24px;
+        .panel,
+        .progress-box {
             padding: 24px;
-            box-shadow: var(--shadow-soft);
             margin-bottom: 22px;
         }
 
@@ -445,7 +429,7 @@
         .habit-card {
             background: #ffffff;
             border: 1px solid #f0f0f0;
-            border-radius: 20px;
+            border-radius: 22px;
             padding: 18px;
             display: grid;
             grid-template-columns: 1fr auto;
@@ -469,10 +453,9 @@
         }
 
         .habit-icon {
-            width: 52px;
-            height: 52px;
+            width: 54px;
+            height: 54px;
             border-radius: 18px;
-            background: var(--green-soft);
             display: grid;
             place-items: center;
             font-size: 24px;
@@ -503,7 +486,7 @@
             border: 1px solid var(--border);
             color: #4b5563;
             font-size: 12px;
-            font-weight: 800;
+            font-weight: 900;
             border-radius: 999px;
             padding: 5px 9px;
         }
@@ -528,23 +511,15 @@
             justify-content: flex-end;
         }
 
-        .progress-box {
-            background: white;
-            border-radius: 24px;
-            padding: 24px;
-            box-shadow: var(--shadow-soft);
-            margin-bottom: 22px;
-        }
-
         .progress-ring-wrap {
             display: grid;
             place-items: center;
-            margin: 8px 0 18px;
+            margin: 10px 0 18px;
         }
 
         .progress-ring {
-            width: 170px;
-            height: 170px;
+            width: 174px;
+            height: 174px;
             border-radius: 50%;
             background: conic-gradient(var(--green) 0deg, #e5e7eb 0deg);
             display: grid;
@@ -555,8 +530,8 @@
         .progress-ring::after {
             content: "";
             position: absolute;
-            width: 116px;
-            height: 116px;
+            width: 118px;
+            height: 118px;
             border-radius: 50%;
             background: white;
         }
@@ -564,7 +539,7 @@
         .progress-number {
             position: relative;
             z-index: 2;
-            font-size: 30px;
+            font-size: 32px;
             font-weight: 950;
         }
 
@@ -581,7 +556,7 @@
             border-radius: 12px;
             background: #f3f4f6;
             font-size: 13px;
-            font-weight: 800;
+            font-weight: 900;
             color: #6b7280;
         }
 
@@ -593,6 +568,212 @@
         .calendar-day.today {
             background: var(--green);
             color: white;
+        }
+
+        .calendar-layout {
+            display: grid;
+            grid-template-columns: 1.35fr 0.75fr;
+            gap: 22px;
+        }
+
+        .calendar-board,
+        .calendar-side {
+            padding: 24px;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .calendar-title {
+            font-size: 28px;
+            font-weight: 950;
+            letter-spacing: -0.04em;
+        }
+
+        .calendar-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .calendar-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .calendar-weekday {
+            text-align: center;
+            font-size: 13px;
+            font-weight: 950;
+            color: var(--muted);
+            padding: 8px 4px;
+        }
+
+        .calendar-month-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .calendar-cell {
+            min-height: 96px;
+            border: 1px solid var(--border);
+            border-radius: 17px;
+            padding: 10px;
+            background: #f9fafb;
+            cursor: pointer;
+            transition: 0.15s ease;
+            text-align: left;
+            color: var(--text);
+        }
+
+        .calendar-cell:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .calendar-cell.empty-space {
+            background: transparent;
+            border: none;
+            cursor: default;
+            box-shadow: none;
+        }
+
+        .calendar-cell.empty-space:hover {
+            transform: none;
+        }
+
+        .calendar-cell.perfect {
+            background: #dcfce7;
+            border-color: #bbf7d0;
+        }
+
+        .calendar-cell.partial {
+            background: #fef3c7;
+            border-color: #fde68a;
+        }
+
+        .calendar-cell.future {
+            background: #f3f4f6;
+            opacity: 0.8;
+        }
+
+        .calendar-cell.today {
+            border: 2px solid var(--blue);
+        }
+
+        .calendar-cell.selected {
+            outline: 3px solid rgba(34, 197, 94, 0.28);
+        }
+
+        .calendar-day-number {
+            font-weight: 950;
+            font-size: 16px;
+            margin-bottom: 7px;
+        }
+
+        .calendar-progress {
+            font-size: 13px;
+            font-weight: 950;
+        }
+
+        .calendar-small-text {
+            margin-top: 5px;
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.3;
+        }
+
+        .calendar-dot-row {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .calendar-mini-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+        }
+
+        .calendar-selected-date {
+            font-size: 22px;
+            font-weight: 950;
+            margin-bottom: 6px;
+        }
+
+        .calendar-selected-summary {
+            color: var(--muted);
+            margin-bottom: 18px;
+            line-height: 1.45;
+        }
+
+        .calendar-day-habits {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .calendar-day-habit {
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            background: #f9fafb;
+        }
+
+        .calendar-day-habit.done {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+
+        .calendar-day-habit.not-done {
+            background: #fff7ed;
+            border-color: #fed7aa;
+        }
+
+        .calendar-day-habit-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .calendar-day-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 13px;
+            display: grid;
+            place-items: center;
+            background: white;
+        }
+
+        .calendar-status {
+            font-size: 13px;
+            font-weight: 950;
+            border-radius: 999px;
+            padding: 6px 9px;
+        }
+
+        .calendar-status.done {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .calendar-status.not-done {
+            background: #ffedd5;
+            color: #9a3412;
         }
 
         .analytics-grid {
@@ -649,13 +830,8 @@
             background: var(--green);
         }
 
-        .dot.blue {
-            background: var(--blue);
-        }
-
-        .dot.orange {
-            background: var(--orange);
-        }
+        .dot.blue { background: var(--blue); }
+        .dot.orange { background: var(--orange); }
 
         .bar-chart {
             display: flex;
@@ -675,7 +851,7 @@
             align-items: center;
             gap: 8px;
             color: var(--muted);
-            font-weight: 800;
+            font-weight: 900;
             font-size: 13px;
         }
 
@@ -686,13 +862,8 @@
             background: #bbf7d0;
         }
 
-        .bar.strong {
-            background: var(--green);
-        }
-
-        .bar.low {
-            background: #fde68a;
-        }
+        .bar.strong { background: var(--green); }
+        .bar.low { background: #fde68a; }
 
         .detail-layout {
             display: grid;
@@ -702,7 +873,7 @@
 
         .detail-hero {
             background: linear-gradient(120deg, #f0fdf4, #eff6ff);
-            border-radius: 26px;
+            border-radius: 28px;
             padding: 26px;
             display: flex;
             justify-content: space-between;
@@ -718,8 +889,8 @@
         }
 
         .detail-big-icon {
-            width: 70px;
-            height: 70px;
+            width: 72px;
+            height: 72px;
             border-radius: 24px;
             background: white;
             display: grid;
@@ -752,8 +923,8 @@
         }
 
         .status-dot {
-            width: 36px;
-            height: 36px;
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
             display: grid;
             place-items: center;
@@ -767,7 +938,7 @@
             background: white;
             border: 2px dashed #d1fae5;
             border-radius: 24px;
-            padding: 34px;
+            padding: 32px;
             text-align: center;
             color: var(--muted);
         }
@@ -788,13 +959,13 @@
             position: fixed;
             right: 24px;
             top: 78px;
-            z-index: 70;
+            z-index: 90;
             display: none;
             min-width: 280px;
             max-width: 420px;
             border-radius: 16px;
             padding: 14px 16px;
-            font-weight: 850;
+            font-weight: 900;
             box-shadow: var(--shadow);
         }
 
@@ -816,7 +987,7 @@
             display: none;
             position: fixed;
             inset: 0;
-            z-index: 60;
+            z-index: 80;
             background: rgba(15, 23, 42, 0.55);
             align-items: center;
             justify-content: center;
@@ -829,7 +1000,7 @@
             max-height: 92vh;
             overflow: auto;
             background: white;
-            border-radius: 28px;
+            border-radius: 30px;
             padding: 28px;
             box-shadow: 0 28px 70px rgba(0, 0, 0, 0.25);
         }
@@ -845,7 +1016,7 @@
         .modal-title {
             font-size: 28px;
             font-weight: 950;
-            letter-spacing: -0.03em;
+            letter-spacing: -0.04em;
         }
 
         .close-btn {
@@ -865,7 +1036,7 @@
 
         label {
             display: block;
-            font-weight: 900;
+            font-weight: 950;
             margin-bottom: 7px;
         }
 
@@ -909,11 +1080,11 @@
         .template-card {
             border: 1px solid var(--border);
             background: #f9fafb;
-            border-radius: 16px;
+            border-radius: 17px;
             padding: 12px 8px;
             cursor: pointer;
             text-align: center;
-            font-weight: 900;
+            font-weight: 950;
             transition: 0.15s ease;
         }
 
@@ -937,21 +1108,25 @@
             margin-top: 18px;
         }
 
-        @media (max-width: 950px) {
-            .top-nav-inner,
-            .app-header {
-                align-items: flex-start;
-                flex-direction: column;
+        @media (max-width: 980px) {
+            .top-nav-inner {
+                grid-template-columns: 1fr;
+                justify-items: start;
             }
 
             .nav-tabs {
-                width: 100%;
+                justify-self: stretch;
                 overflow-x: auto;
+            }
+
+            .nav-right {
+                width: 100%;
             }
 
             .hero,
             .main-grid,
-            .analytics-grid {
+            .analytics-grid,
+            .calendar-layout {
                 grid-template-columns: 1fr;
             }
 
@@ -975,23 +1150,29 @@
                 padding: 10px 14px;
             }
 
+            .app-header,
+            .hero-card,
+            .detail-hero,
+            .calendar-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
             .cards,
             .cards.three {
                 grid-template-columns: 1fr;
-            }
-
-            .hero-card,
-            .detail-hero {
-                flex-direction: column;
-                align-items: flex-start;
             }
 
             .habit-card {
                 grid-template-columns: 1fr;
             }
 
-            .habit-actions {
+            .habit-actions,
+            .calendar-controls,
+            .modal-actions {
+                width: 100%;
                 justify-content: flex-start;
+                flex-direction: column;
             }
 
             .form-row,
@@ -999,12 +1180,17 @@
                 grid-template-columns: 1fr;
             }
 
-            .modal-actions {
-                flex-direction: column;
-            }
-
             .btn {
                 width: 100%;
+            }
+
+            .calendar-cell {
+                min-height: 82px;
+                padding: 8px;
+            }
+
+            .calendar-small-text {
+                display: none;
             }
 
             .toast {
@@ -1027,12 +1213,13 @@
     <nav class="top-nav">
         <div class="top-nav-inner">
             <a class="brand-mini" href="/api/app/" onclick="showView('dashboard'); return false;">
-                <span class="brand-mini-icon">🐹</span>
+                <span class="brand-icon">🐹</span>
                 <span>HabitHamster</span>
             </a>
 
             <div class="nav-tabs">
                 <button class="nav-tab active" id="tab-dashboard" type="button" onclick="showView('dashboard')">Дашборд</button>
+                <button class="nav-tab" id="tab-calendar" type="button" onclick="showView('calendar')">Календарь</button>
                 <button class="nav-tab" id="tab-analytics" type="button" onclick="showView('analytics')">Аналитика</button>
                 <button class="nav-tab" id="tab-habits" type="button" onclick="showView('habits')">Привычки</button>
                 <button class="nav-tab" id="tab-detail" type="button" onclick="openFirstHabitDetail()">Детали</button>
@@ -1051,11 +1238,11 @@
                 <div class="profile-avatar">🐹</div>
                 <div>
                     <h1 id="pageTitle">Дашборд</h1>
-                    <div class="subtitle" id="profileSubtitle">Загрузка профиля...</div>
+                    <div class="subtitle" id="profileSubtitle">Загрузка...</div>
                 </div>
             </div>
 
-            <div class="header-actions">
+            <div class="nav-right">
                 <button class="btn secondary" type="button" onclick="reloadAll()">↻ Обновить</button>
                 <button class="btn" type="button" onclick="openCreateHabitModal()">+ Создать привычку</button>
             </div>
@@ -1067,23 +1254,18 @@
                     <div class="hamster-box">🐹</div>
                     <div>
                         <h2 id="heroTitle">Просыпайся и сияй!</h2>
-                        <div class="subtitle" id="heroText">
-                            Загружаем твои привычки и прогресс.
-                        </div>
+                        <div class="subtitle" id="heroText">Загружаем твой прогресс.</div>
                         <div class="quick-row">
                             <button class="quick-pill" type="button" onclick="showView('habits')">Все привычки</button>
-                            <button class="quick-pill" type="button" onclick="showView('analytics')">Посмотреть аналитику</button>
-                            <button class="quick-pill" type="button" onclick="openCreateHabitModal()">Создать новую</button>
+                            <button class="quick-pill" type="button" onclick="showView('calendar')">Календарь</button>
+                            <button class="quick-pill" type="button" onclick="showView('analytics')">Аналитика</button>
                         </div>
                     </div>
                 </div>
 
                 <div class="quick-card">
                     <h3>Быстрый старт</h3>
-                    <div class="subtitle">
-                        Создай привычку по шаблону за несколько секунд.
-                    </div>
-
+                    <div class="subtitle">Создай привычку по шаблону.</div>
                     <div class="quick-row">
                         <button class="quick-pill" type="button" onclick="openTemplateHabit('water')">💧 Вода</button>
                         <button class="quick-pill" type="button" onclick="openTemplateHabit('book')">📘 Читать</button>
@@ -1095,7 +1277,7 @@
 
             <section class="cards">
                 <div class="stat-card">
-                    <div class="stat-label">Активная серия</div>
+                    <div class="stat-label">Серия</div>
                     <div class="stat-value green" id="currentStreak">0</div>
                     <div class="stat-hint">дней подряд</div>
                 </div>
@@ -1107,7 +1289,7 @@
                 </div>
 
                 <div class="stat-card">
-                    <div class="stat-label">Привычек сегодня</div>
+                    <div class="stat-label">Привычки</div>
                     <div class="stat-value orange" id="habitCounter">0/0</div>
                     <div class="stat-hint">выполнено / всего</div>
                 </div>
@@ -1124,30 +1306,20 @@
                     <div class="panel">
                         <div class="panel-head">
                             <div>
-                                <div class="panel-title">Сегодняшние привычки</div>
-                                <div class="subtitle">Выполни задачи дня и укрепи серию.</div>
+                                <div class="panel-title">Сегодня</div>
+                                <div class="subtitle">Привычки, которые нужно выполнить.</div>
                             </div>
                             <span class="panel-badge" id="todayBadge">0 задач</span>
                         </div>
 
-                        <div class="habit-list" id="dashboardHabitList">
-                            <div class="empty-state">
-                                <div class="empty-icon">⏳</div>
-                                <strong>Загрузка...</strong>
-                                Получаем список привычек.
-                            </div>
-                        </div>
+                        <div class="habit-list" id="dashboardHabitList"></div>
                     </div>
                 </div>
 
                 <aside>
                     <div class="progress-box">
-                        <div class="panel-head">
-                            <div>
-                                <div class="panel-title">Круг прогресса</div>
-                                <div class="subtitle">Твой прогресс за сегодня.</div>
-                            </div>
-                        </div>
+                        <div class="panel-title">Круг прогресса</div>
+                        <div class="subtitle">Твой день в одном числе.</div>
 
                         <div class="progress-ring-wrap">
                             <div class="progress-ring" id="progressRing">
@@ -1155,12 +1327,12 @@
                             </div>
                         </div>
 
-                        <button class="btn ghost" type="button" onclick="openFirstHabitDetail()">Открыть детали</button>
+                        <button class="btn ghost" type="button" onclick="showView('calendar')">Открыть календарь</button>
                     </div>
 
                     <div class="panel">
-                        <div class="panel-title">Мини-календарь</div>
-                        <div class="subtitle">Визуальный блок для MVP.</div>
+                        <div class="panel-title">Неделя</div>
+                        <div class="subtitle">Мини-прогресс для MVP.</div>
 
                         <div class="calendar-mini">
                             <div class="calendar-day">Пн</div>
@@ -1184,47 +1356,91 @@
             </section>
         </section>
 
+        <section class="view" id="view-calendar">
+            <section class="hero-card" style="margin-bottom: 22px;">
+                <div class="hamster-box">📅</div>
+                <div>
+                    <h2>Календарь привычек</h2>
+                    <div class="subtitle">Зелёный — идеальный день, жёлтый — частично, серый — пусто.</div>
+                </div>
+            </section>
+
+            <section class="calendar-layout">
+                <div class="calendar-board">
+                    <div class="calendar-header">
+                        <div>
+                            <div class="calendar-title" id="calendarMonthTitle">Календарь</div>
+                            <div class="subtitle" id="calendarSubtitle">Загрузка...</div>
+                        </div>
+
+                        <div class="calendar-controls">
+                            <button class="btn secondary" type="button" onclick="changeCalendarMonth(-1)">←</button>
+                            <button class="btn ghost" type="button" onclick="goToCurrentMonth()">Сегодня</button>
+                            <button class="btn secondary" type="button" onclick="changeCalendarMonth(1)">→</button>
+                        </div>
+                    </div>
+
+                    <div class="calendar-weekdays">
+                        <div class="calendar-weekday">Пн</div>
+                        <div class="calendar-weekday">Вт</div>
+                        <div class="calendar-weekday">Ср</div>
+                        <div class="calendar-weekday">Чт</div>
+                        <div class="calendar-weekday">Пт</div>
+                        <div class="calendar-weekday">Сб</div>
+                        <div class="calendar-weekday">Вс</div>
+                    </div>
+
+                    <div class="calendar-month-grid" id="calendarGrid"></div>
+                </div>
+
+                <aside class="calendar-side">
+                    <div class="calendar-selected-date" id="selectedCalendarDate">Выбери день</div>
+                    <div class="calendar-selected-summary" id="selectedCalendarSummary">
+                        Нажми на день в календаре.
+                    </div>
+                    <div class="calendar-day-habits" id="selectedCalendarHabits"></div>
+                </aside>
+            </section>
+        </section>
+
         <section class="view" id="view-analytics">
             <section class="hero-card" style="margin-bottom: 22px;">
                 <div class="hamster-box">💡</div>
                 <div>
-                    <h2>Аналитика привычек</h2>
-                    <div class="subtitle" id="analyticsInsight">
-                        Смотрим, что уже получается, а что можно улучшить.
-                    </div>
+                    <h2>Аналитика</h2>
+                    <div class="subtitle" id="analyticsInsight">Смотрим прогресс и слабые места.</div>
                 </div>
             </section>
 
             <section class="cards">
                 <div class="stat-card">
-                    <div class="stat-label">Всего привычек</div>
+                    <div class="stat-label">Всего</div>
                     <div class="stat-value green" id="analyticsTotalHabits">0</div>
                     <div class="stat-hint">активные привычки</div>
                 </div>
 
                 <div class="stat-card">
-                    <div class="stat-label">Выполнено сегодня</div>
+                    <div class="stat-label">Сегодня</div>
                     <div class="stat-value blue" id="analyticsDoneToday">0</div>
-                    <div class="stat-hint">закрытые задачи</div>
+                    <div class="stat-hint">выполнено</div>
                 </div>
 
                 <div class="stat-card">
-                    <div class="stat-label">Процент дня</div>
+                    <div class="stat-label">Процент</div>
                     <div class="stat-value orange" id="analyticsDayRate">0%</div>
-                    <div class="stat-hint">эффективность</div>
+                    <div class="stat-hint">день</div>
                 </div>
 
                 <div class="stat-card">
                     <div class="stat-label">XP</div>
                     <div class="stat-value purple" id="analyticsXP">0</div>
-                    <div class="stat-hint">опыт профиля</div>
+                    <div class="stat-hint">опыт</div>
                 </div>
             </section>
 
             <section class="analytics-grid">
                 <div class="panel">
-                    <div class="panel-title">Распределение целей</div>
-
+                    <div class="panel-title">Типы целей</div>
                     <div class="donut-wrap">
                         <div class="donut"></div>
 
@@ -1233,12 +1449,10 @@
                                 <span><span class="dot"></span>Отметки</span>
                                 <strong id="checkCount">0</strong>
                             </div>
-
                             <div class="legend-row">
                                 <span><span class="dot blue"></span>Минуты</span>
                                 <strong id="minutesCount">0</strong>
                             </div>
-
                             <div class="legend-row">
                                 <span><span class="dot orange"></span>Количество</span>
                                 <strong id="countCount">0</strong>
@@ -1254,14 +1468,7 @@
             </section>
 
             <div class="panel">
-                <div class="panel-head">
-                    <div>
-                        <div class="panel-title">Динамика недели</div>
-                        <div class="subtitle">Демо-график для визуального MVP.</div>
-                    </div>
-                    <span class="panel-badge">Неделя</span>
-                </div>
-
+                <div class="panel-title">Динамика недели</div>
                 <div class="bar-chart">
                     <div class="bar-item"><div class="bar" style="height: 55%;"></div><span>Пн</span></div>
                     <div class="bar-item"><div class="bar" style="height: 40%;"></div><span>Вт</span></div>
@@ -1279,7 +1486,7 @@
                 <div class="panel-head">
                     <div>
                         <div class="panel-title">Мои привычки</div>
-                        <div class="subtitle">Все активные привычки в одном месте.</div>
+                        <div class="subtitle">Все активные привычки.</div>
                     </div>
                     <button class="btn" type="button" onclick="openCreateHabitModal()">+ Добавить</button>
                 </div>
@@ -1295,35 +1502,33 @@
                         <div class="detail-big-icon" id="detailIcon">✅</div>
                         <div>
                             <h2 id="detailTitle">Выберите привычку</h2>
-                            <div class="subtitle" id="detailSubtitle">
-                                Нажмите “Подробнее” у любой привычки.
-                            </div>
+                            <div class="subtitle" id="detailSubtitle">Нажмите “Подробнее”.</div>
                         </div>
                     </div>
 
-                    <div class="header-actions">
+                    <div class="nav-right">
                         <button class="btn secondary" type="button" onclick="showView('dashboard')">← Назад</button>
-                        <button class="btn" type="button" onclick="completeSelectedHabit()">✓ Выполнить сегодня</button>
+                        <button class="btn" type="button" onclick="completeSelectedHabit()">✓ Выполнить</button>
                     </div>
                 </div>
 
                 <section class="cards three">
                     <div class="stat-card">
-                        <div class="stat-label">Процент выполнения</div>
+                        <div class="stat-label">Выполнение</div>
                         <div class="stat-value green" id="detailCompletionRate">0%</div>
-                        <div class="stat-hint">по логам привычки</div>
+                        <div class="stat-hint">по логам</div>
                     </div>
 
                     <div class="stat-card">
-                        <div class="stat-label">Общее время</div>
+                        <div class="stat-label">Время</div>
                         <div class="stat-value blue" id="detailDuration">0м</div>
-                        <div class="stat-hint">накоплено</div>
+                        <div class="stat-hint">всего</div>
                     </div>
 
                     <div class="stat-card">
-                        <div class="stat-label">Выполнено раз</div>
+                        <div class="stat-label">Раз</div>
                         <div class="stat-value orange" id="detailCompleted">0</div>
-                        <div class="stat-hint">успешные отметки</div>
+                        <div class="stat-hint">выполнено</div>
                     </div>
                 </section>
 
@@ -1331,20 +1536,12 @@
                     <div class="hamster-box">🐹</div>
                     <div>
                         <h2 id="detailMessage">Почти у цели!</h2>
-                        <div class="subtitle">
-                            Маленькие действия каждый день превращаются в стабильную привычку.
-                        </div>
+                        <div class="subtitle">Маленькие шаги тоже считаются.</div>
                     </div>
                 </section>
 
                 <section class="panel">
-                    <div class="panel-head">
-                        <div>
-                            <div class="panel-title">Интенсивность активности</div>
-                            <div class="subtitle">Визуальная динамика по дням недели.</div>
-                        </div>
-                    </div>
-
+                    <div class="panel-title">Интенсивность</div>
                     <div class="bar-chart">
                         <div class="bar-item"><div class="bar" style="height: 48%;"></div><span>Пн</span></div>
                         <div class="bar-item"><div class="bar" style="height: 58%;"></div><span>Вт</span></div>
@@ -1357,14 +1554,8 @@
                 </section>
 
                 <section class="panel">
-                    <div class="panel-title">История выполнения</div>
-                    <div class="history-list" id="detailHistory">
-                        <div class="empty-state">
-                            <div class="empty-icon">📭</div>
-                            <strong>История пока не загружена</strong>
-                            Выберите привычку, чтобы увидеть логи.
-                        </div>
-                    </div>
+                    <div class="panel-title">История</div>
+                    <div class="history-list" id="detailHistory"></div>
                 </section>
             </div>
         </section>
@@ -1375,47 +1566,28 @@
             <div class="modal-header">
                 <div>
                     <div class="modal-title">Новая привычка</div>
-                    <div class="subtitle">Создай действие, которое хочешь повторять регулярно.</div>
+                    <div class="subtitle">Выбери шаблон или заполни вручную.</div>
                 </div>
                 <button class="close-btn" type="button" onclick="closeCreateHabitModal()">×</button>
             </div>
 
             <div class="template-grid">
-                <button class="template-card" type="button" onclick="fillTemplate('water')">
-                    <span>💧</span>
-                    Вода
-                </button>
-
-                <button class="template-card" type="button" onclick="fillTemplate('book')">
-                    <span>📘</span>
-                    Читать
-                </button>
-
-                <button class="template-card" type="button" onclick="fillTemplate('fitness')">
-                    <span>💪</span>
-                    Спорт
-                </button>
-
-                <button class="template-card" type="button" onclick="fillTemplate('sleep')">
-                    <span>🌙</span>
-                    Сон
-                </button>
-
-                <button class="template-card" type="button" onclick="fillTemplate('meditation')">
-                    <span>🧘</span>
-                    Медитация
-                </button>
+                <button class="template-card" type="button" onclick="fillTemplate('water')"><span>💧</span>Вода</button>
+                <button class="template-card" type="button" onclick="fillTemplate('book')"><span>📘</span>Читать</button>
+                <button class="template-card" type="button" onclick="fillTemplate('fitness')"><span>💪</span>Спорт</button>
+                <button class="template-card" type="button" onclick="fillTemplate('sleep')"><span>🌙</span>Сон</button>
+                <button class="template-card" type="button" onclick="fillTemplate('meditation')"><span>🧘</span>Медитация</button>
             </div>
 
             <form id="createHabitForm" onsubmit="createHabit(event)">
                 <div class="form-group">
-                    <label for="createTitle">Название привычки</label>
+                    <label for="createTitle">Название</label>
                     <input id="createTitle" type="text" placeholder="Например: Пить воду" required />
                 </div>
 
                 <div class="form-group">
                     <label for="createDescription">Описание</label>
-                    <textarea id="createDescription" placeholder="Например: 2 стакана воды утром"></textarea>
+                    <textarea id="createDescription" placeholder="Например: 8 стаканов в день"></textarea>
                 </div>
 
                 <div class="form-row">
@@ -1462,13 +1634,13 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="createColor">Цвет привычки</label>
+                    <label for="createColor">Цвет</label>
                     <input id="createColor" type="color" value="#4CAF50" />
                 </div>
 
                 <div class="modal-actions">
                     <button class="btn secondary" type="button" onclick="closeCreateHabitModal()">Отмена</button>
-                    <button class="btn" type="submit">Создать привычку</button>
+                    <button class="btn" type="submit">Создать</button>
                 </div>
             </form>
         </div>
@@ -1479,6 +1651,12 @@
         let currentUserId = null;
         let selectedHabitId = null;
         let toastTimer = null;
+
+        const todayDate = new Date();
+        let currentCalendarYear = todayDate.getFullYear();
+        let currentCalendarMonth = todayDate.getMonth() + 1;
+        let calendarData = null;
+        let selectedCalendarDay = null;
 
         const templates = {
             water: {
@@ -1501,7 +1679,7 @@
             },
             fitness: {
                 title: "Тренировка",
-                description: "Сделать короткую физическую активность",
+                description: "Короткая физическая активность",
                 icon: "fitness",
                 target_type: "minutes",
                 target_value: 30,
@@ -1542,24 +1720,25 @@
                 renderDashboardStats(dashboardData.stats);
                 renderHabits(dashboardData.today_habits);
                 renderAnalytics(dashboardData);
+
+                await loadCalendar();
             } catch (error) {
                 console.error(error);
-                showToast("Не удалось загрузить данные дашборда.", "error");
+                showToast("Не удалось загрузить данные.", "error");
             }
         }
 
         function renderProfile(profile) {
             if (!profile) {
                 currentUserId = null;
-                document.getElementById("profileSubtitle").textContent =
-                    "Профиль не найден. Попробуйте войти заново.";
+                document.getElementById("profileSubtitle").textContent = "Профиль не найден";
                 return;
             }
 
             currentUserId = profile.id;
 
             document.getElementById("profileSubtitle").textContent =
-                `Уровень ${profile.level} · ${profile.mascot_name} · лучший стрик ${profile.best_streak}`;
+                `${profile.username} · уровень ${profile.level} · ${profile.mascot_name}`;
 
             document.getElementById("currentStreak").textContent = profile.current_streak;
             document.getElementById("xpCounter").textContent = `${profile.xp} XP`;
@@ -1581,21 +1760,21 @@
 
             document.getElementById("heroText").textContent =
                 total === 0
-                    ? "У тебя пока нет привычек. Создай первую и начни серию."
-                    : `Сегодня выполнено ${done} из ${total}. Осталось ${Math.max(total - done, 0)}.`;
+                    ? "Создай первую привычку и начни серию."
+                    : `Выполнено ${done} из ${total}. Осталось ${Math.max(total - done, 0)}.`;
 
             document.getElementById("heroTitle").textContent =
                 progress === 100
-                    ? "Идеально! Все привычки закрыты."
+                    ? "Идеально! День закрыт."
                     : "Просыпайся и сияй!";
         }
 
         function renderHabits(habits) {
-            renderHabitList("dashboardHabitList", habits, true);
-            renderHabitList("allHabitList", habits, false);
+            renderHabitList("dashboardHabitList", habits);
+            renderHabitList("allHabitList", habits);
         }
 
-        function renderHabitList(containerId, habits, compact) {
+        function renderHabitList(containerId, habits) {
             const container = document.getElementById(containerId);
             container.innerHTML = "";
 
@@ -1603,10 +1782,10 @@
                 container.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-icon">🐹</div>
-                        <strong>У тебя пока нет привычек</strong>
-                        Создай первую привычку и начни собирать серию.
+                        <strong>Пока нет привычек</strong>
+                        Создай первую привычку.
                         <br /><br />
-                        <button class="btn" type="button" onclick="openCreateHabitModal()">+ Создать привычку</button>
+                        <button class="btn" type="button" onclick="openCreateHabitModal()">+ Создать</button>
                     </div>
                 `;
                 return;
@@ -1617,11 +1796,11 @@
                 card.className = "habit-card";
 
                 const statusChip = habit.is_completed_today
-                    ? `<span class="meta-chip done">✓ Выполнено сегодня</span>`
+                    ? `<span class="meta-chip done">✓ Выполнено</span>`
                     : `<span class="meta-chip todo">○ Нужно выполнить</span>`;
 
                 const completeButton = habit.is_completed_today
-                    ? `<button class="btn disabled" type="button" disabled>✓ Выполнено</button>`
+                    ? `<button class="btn disabled" type="button" disabled>✓ Готово</button>`
                     : `<button class="btn" type="button" onclick="completeHabit(${habit.id})">✓ Выполнить</button>`;
 
                 card.innerHTML = `
@@ -1632,10 +1811,7 @@
 
                         <div>
                             <div class="habit-title">${escapeHtml(habit.title)}</div>
-                            <div class="habit-description">
-                                ${escapeHtml(habit.description || "Без описания")}
-                            </div>
-
+                            <div class="habit-description">${escapeHtml(habit.description || "Без описания")}</div>
                             <div class="habit-meta">
                                 ${statusChip}
                                 <span class="meta-chip">${getTargetTypeName(habit.target_type)}</span>
@@ -1672,8 +1848,8 @@
 
             document.getElementById("analyticsInsight").textContent =
                 stats.daily_progress >= 80
-                    ? "Отличный день: большая часть привычек уже выполнена."
-                    : "Есть пространство для роста: попробуй закрыть ещё одну привычку.";
+                    ? "Отличный день. Темп высокий."
+                    : "Есть шанс закрыть ещё одну привычку.";
 
             const topHabitsList = document.getElementById("topHabitsList");
             topHabitsList.innerHTML = "";
@@ -1682,8 +1858,8 @@
                 topHabitsList.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-icon">📊</div>
-                        <strong>Пока нет аналитики</strong>
-                        Создай привычки, чтобы увидеть статистику.
+                        <strong>Нет данных</strong>
+                        Создай привычки для аналитики.
                     </div>
                 `;
                 return;
@@ -1711,6 +1887,159 @@
             });
         }
 
+        async function loadCalendar() {
+            try {
+                const response = await fetch(
+                    `/api/calendar/?year=${currentCalendarYear}&month=${currentCalendarMonth}`
+                );
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                calendarData = await response.json();
+                renderCalendar(calendarData);
+
+                if (!selectedCalendarDay) {
+                    const todayItem = calendarData.days.find((day) => day.is_today);
+                    selectedCalendarDay = todayItem || calendarData.days[0];
+                }
+
+                renderSelectedCalendarDay(selectedCalendarDay);
+            } catch (error) {
+                console.error(error);
+                showToast("Не удалось загрузить календарь.", "error");
+            }
+        }
+
+        function renderCalendar(data) {
+            const calendarGrid = document.getElementById("calendarGrid");
+            calendarGrid.innerHTML = "";
+
+            document.getElementById("calendarMonthTitle").textContent =
+                `${data.month_name} ${data.year}`;
+
+            document.getElementById("calendarSubtitle").textContent =
+                `Активных привычек: ${data.active_habits_count}`;
+
+            const firstDay = new Date(data.year, data.month - 1, 1);
+            const jsWeekDay = firstDay.getDay();
+            const mondayBasedOffset = jsWeekDay === 0 ? 6 : jsWeekDay - 1;
+
+            for (let i = 0; i < mondayBasedOffset; i += 1) {
+                const emptyCell = document.createElement("div");
+                emptyCell.className = "calendar-cell empty-space";
+                calendarGrid.appendChild(emptyCell);
+            }
+
+            data.days.forEach((day) => {
+                const cell = document.createElement("button");
+                cell.type = "button";
+
+                const isSelected = selectedCalendarDay?.date === day.date;
+
+                cell.className = `calendar-cell ${day.state} ${day.is_today ? "today" : ""} ${isSelected ? "selected" : ""}`;
+
+                const dots = day.habits
+                    .slice(0, 6)
+                    .map((habit) => {
+                        const color = habit.status === "done" ? "#22c55e" : "#d1d5db";
+                        return `<span class="calendar-mini-dot" style="background: ${color};"></span>`;
+                    })
+                    .join("");
+
+                cell.innerHTML = `
+                    <div class="calendar-day-number">${day.day}</div>
+                    <div class="calendar-progress">${day.progress}%</div>
+                    <div class="calendar-small-text">${day.completed_count}/${day.total_count} выполнено</div>
+                    <div class="calendar-dot-row">${dots}</div>
+                `;
+
+                cell.onclick = () => {
+                    selectedCalendarDay = day;
+                    renderCalendar(calendarData);
+                    renderSelectedCalendarDay(day);
+                };
+
+                calendarGrid.appendChild(cell);
+            });
+        }
+
+        function renderSelectedCalendarDay(day) {
+            if (!day) {
+                return;
+            }
+
+            document.getElementById("selectedCalendarDate").textContent = formatDate(day.date);
+
+            document.getElementById("selectedCalendarSummary").textContent =
+                `Прогресс: ${day.progress}%. Выполнено ${day.completed_count} из ${day.total_count}.`;
+
+            const container = document.getElementById("selectedCalendarHabits");
+            container.innerHTML = "";
+
+            if (!day.habits || day.habits.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📌</div>
+                        <strong>Нет привычек</strong>
+                        Создай привычку.
+                    </div>
+                `;
+                return;
+            }
+
+            day.habits.forEach((habit) => {
+                const item = document.createElement("div");
+                const isDone = habit.status === "done";
+
+                item.className = `calendar-day-habit ${isDone ? "done" : "not-done"}`;
+
+                item.innerHTML = `
+                    <div class="calendar-day-habit-left">
+                        <div class="calendar-day-icon">${getIcon(habit.icon)}</div>
+                        <div>
+                            <div class="habit-title">${escapeHtml(habit.title)}</div>
+                            <div class="habit-description">${isDone ? "Выполнено" : "Не выполнено"}</div>
+                        </div>
+                    </div>
+
+                    <span class="calendar-status ${isDone ? "done" : "not-done"}">
+                        ${isDone ? "✓ Done" : "○ Todo"}
+                    </span>
+                `;
+
+                container.appendChild(item);
+            });
+        }
+
+        async function changeCalendarMonth(direction) {
+            currentCalendarMonth += direction;
+
+            if (currentCalendarMonth < 1) {
+                currentCalendarMonth = 12;
+                currentCalendarYear -= 1;
+            }
+
+            if (currentCalendarMonth > 12) {
+                currentCalendarMonth = 1;
+                currentCalendarYear += 1;
+            }
+
+            selectedCalendarDay = null;
+            await loadCalendar();
+        }
+
+        async function goToCurrentMonth() {
+            const now = new Date();
+
+            currentCalendarYear = now.getFullYear();
+            currentCalendarMonth = now.getMonth() + 1;
+            selectedCalendarDay = null;
+
+            await loadCalendar();
+        }
+
         async function openHabitDetail(habitId) {
             selectedHabitId = habitId;
             showView("detail");
@@ -1727,7 +2056,7 @@
                 renderDetail(data.habit, data.stats, data.recent_logs);
             } catch (error) {
                 console.error(error);
-                showToast("Не удалось открыть детали привычки.", "error");
+                showToast("Не удалось открыть детали.", "error");
             }
         }
 
@@ -1741,16 +2070,10 @@
             document.getElementById("detailDuration").textContent = `${stats.total_duration_minutes}м`;
             document.getElementById("detailCompleted").textContent = stats.completed_count;
 
-            if (stats.completion_rate >= 80) {
-                document.getElementById("detailMessage").textContent =
-                    "Отличная серия! Ты уверенно держишь темп.";
-            } else if (stats.completion_rate >= 50) {
-                document.getElementById("detailMessage").textContent =
-                    "Хороший прогресс! Осталось закрепить стабильность.";
-            } else {
-                document.getElementById("detailMessage").textContent =
-                    "Почти у цели! Маленькие шаги тоже считаются.";
-            }
+            document.getElementById("detailMessage").textContent =
+                stats.completion_rate >= 80
+                    ? "Отличная серия!"
+                    : "Продолжай в том же темпе.";
 
             renderHistory(logs);
         }
@@ -1764,7 +2087,7 @@
                     <div class="empty-state">
                         <div class="empty-icon">📭</div>
                         <strong>Истории пока нет</strong>
-                        Выполни привычку, чтобы здесь появилась первая запись.
+                        Выполни привычку.
                     </div>
                 `;
                 return;
@@ -1806,7 +2129,7 @@
                     throw new Error(await response.text());
                 }
 
-                showToast("Привычка отмечена как выполненная.", "success");
+                showToast("Привычка выполнена.", "success");
 
                 await loadDashboard();
 
@@ -1815,7 +2138,7 @@
                 }
             } catch (error) {
                 console.error(error);
-                showToast("Не удалось отметить привычку.", "error");
+                showToast("Не удалось выполнить привычку.", "error");
             }
         }
 
@@ -1832,14 +2155,14 @@
             event.preventDefault();
 
             if (!currentUserId) {
-                showToast("Не найден пользователь. Войдите заново.", "error");
+                showToast("Войдите заново.", "error");
                 return;
             }
 
             const title = document.getElementById("createTitle").value.trim();
 
             if (!title) {
-                showToast("Введите название привычки.", "error");
+                showToast("Введите название.", "error");
                 return;
             }
 
@@ -1874,7 +2197,7 @@
 
                 await loadDashboard();
                 showView("dashboard");
-                showToast("Привычка успешно создана.", "success");
+                showToast("Привычка создана.", "success");
             } catch (error) {
                 console.error(error);
                 showToast("Не удалось создать привычку.", "error");
@@ -1899,6 +2222,7 @@
 
             const titles = {
                 dashboard: "Дашборд",
+                calendar: "Календарь",
                 analytics: "Аналитика",
                 habits: "Мои привычки",
                 detail: "Детали привычки",
@@ -2050,9 +2374,9 @@
         function getStatusName(status) {
             const statuses = {
                 done: "Сессия завершена",
-                missed: "Пропущенная сессия",
-                partial: "Частично выполнено",
-                skipped: "Осознанно пропущено",
+                missed: "Пропущено",
+                partial: "Частично",
+                skipped: "Пропущено осознанно",
             };
 
             return statuses[status] || status;

@@ -1,3 +1,6 @@
+import calendar
+from datetime import date
+
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils import timezone
 from django.views.generic import TemplateView
@@ -46,7 +49,7 @@ class HabitViewSet(viewsets.ModelViewSet):
     """
     API для привычек текущего пользователя.
 
-    Теперь пользователь видит и изменяет только свои привычки.
+    Пользователь видит и изменяет только свои привычки.
     """
 
     serializer_class = HabitSerializer
@@ -331,3 +334,176 @@ class DashboardAPIView(APIView):
                 "today_habits": today_habits,
             }
         )
+
+
+class CalendarAPIView(APIView):
+    """
+    API календаря привычек текущего пользователя.
+
+    Endpoint:
+    GET /api/calendar/
+
+    Дополнительно можно передать:
+    /api/calendar/?year=2026&month=5
+
+    Возвращает:
+    - год
+    - месяц
+    - название месяца
+    - дни месяца
+    - прогресс по каждому дню
+    - привычки и их статус за каждый день
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        today = timezone.localdate()
+
+        year = request.query_params.get("year")
+        month = request.query_params.get("month")
+
+        try:
+            year = int(year) if year else today.year
+            month = int(month) if month else today.month
+
+            if month < 1 or month > 12:
+                raise ValueError
+        except ValueError:
+            return Response(
+                {
+                    "detail": "Некорректный год или месяц.",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        _, days_in_month = calendar.monthrange(year, month)
+
+        active_habits = Habit.objects.filter(
+            user=user,
+            is_active=True,
+        ).order_by("created_at")
+
+        active_habits_count = active_habits.count()
+
+        month_start = date(year, month, 1)
+        month_end = date(year, month, days_in_month)
+
+        logs = HabitLog.objects.filter(
+            user=user,
+            log_date__gte=month_start,
+            log_date__lte=month_end,
+        ).select_related("habit")
+
+        logs_by_date = {}
+
+        for log in logs:
+            logs_by_date.setdefault(log.log_date, []).append(log)
+
+        days = []
+
+        for day_number in range(1, days_in_month + 1):
+            current_date = date(year, month, day_number)
+            day_logs = logs_by_date.get(current_date, [])
+
+            completed_habit_ids = {
+                log.habit_id
+                for log in day_logs
+                if log.status == "done"
+            }
+
+            completed_count = len(completed_habit_ids)
+
+            if active_habits_count == 0:
+                progress = 0
+            else:
+                progress = round(
+                    completed_count / active_habits_count * 100
+                )
+
+            habits_for_day = []
+
+            for habit in active_habits:
+                habit_log = None
+
+                for log in day_logs:
+                    if log.habit_id == habit.id:
+                        habit_log = log
+                        break
+
+                if habit_log is None:
+                    habit_status = "not_done"
+                    log_id = None
+                    value = 0
+                    duration_minutes = 0
+                else:
+                    habit_status = habit_log.status
+                    log_id = habit_log.id
+                    value = habit_log.value
+                    duration_minutes = habit_log.duration_minutes
+
+                habits_for_day.append(
+                    {
+                        "id": habit.id,
+                        "title": habit.title,
+                        "icon": habit.icon,
+                        "color": habit.color,
+                        "status": habit_status,
+                        "log_id": log_id,
+                        "value": value,
+                        "duration_minutes": duration_minutes,
+                    }
+                )
+
+            if progress == 100 and active_habits_count > 0:
+                day_state = "perfect"
+            elif progress > 0:
+                day_state = "partial"
+            elif current_date > today:
+                day_state = "future"
+            else:
+                day_state = "empty"
+
+            days.append(
+                {
+                    "date": current_date.isoformat(),
+                    "day": day_number,
+                    "is_today": current_date == today,
+                    "is_future": current_date > today,
+                    "completed_count": completed_count,
+                    "total_count": active_habits_count,
+                    "progress": progress,
+                    "state": day_state,
+                    "habits": habits_for_day,
+                }
+            )
+
+        return Response(
+            {
+                "year": year,
+                "month": month,
+                "month_name": self.get_month_name(month),
+                "days_in_month": days_in_month,
+                "active_habits_count": active_habits_count,
+                "days": days,
+            }
+        )
+
+    def get_month_name(self, month):
+        month_names = {
+            1: "Январь",
+            2: "Февраль",
+            3: "Март",
+            4: "Апрель",
+            5: "Май",
+            6: "Июнь",
+            7: "Июль",
+            8: "Август",
+            9: "Сентябрь",
+            10: "Октябрь",
+            11: "Ноябрь",
+            12: "Декабрь",
+        }
+
+        return month_names.get(month, "")

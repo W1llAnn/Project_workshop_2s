@@ -14,8 +14,11 @@
             margin: 0;
             min-height: 100vh;
             font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #f0fdf4, #eff6ff);
-            color: #1f2937;
+            background:
+                radial-gradient(circle at top left, #dcfce7 0, transparent 35%),
+                radial-gradient(circle at top right, #dbeafe 0, transparent 30%),
+                #f7f7f3;
+            color: #172033;
             display: grid;
             place-items: center;
             padding: 24px;
@@ -25,75 +28,75 @@
             width: 100%;
             max-width: 440px;
             background: white;
-            border-radius: 24px;
+            border-radius: 28px;
             padding: 34px;
-            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.12);
+            box-shadow: 0 26px 70px rgba(15, 23, 42, 0.14);
         }
 
         .logo {
-            width: 70px;
-            height: 70px;
-            border-radius: 20px;
-            border: 3px solid #111827;
+            width: 72px;
+            height: 72px;
+            border-radius: 24px;
+            border: 4px solid #111827;
             display: grid;
             place-items: center;
             font-size: 34px;
             margin-bottom: 18px;
+            background: white;
         }
 
         h1 {
             margin: 0;
-            font-size: 30px;
+            font-size: 32px;
+            letter-spacing: -0.04em;
         }
 
         .subtitle {
             color: #6b7280;
-            margin-top: 8px;
-            margin-bottom: 24px;
-            line-height: 1.5;
+            margin: 8px 0 22px;
+            line-height: 1.45;
         }
 
         .error {
-            background: #fef2f2;
+            background: #fee2e2;
             color: #991b1b;
             border: 1px solid #fecaca;
             padding: 12px;
-            border-radius: 12px;
+            border-radius: 14px;
             margin-bottom: 16px;
-            font-weight: 700;
+            font-weight: 800;
         }
 
         .form-group {
-            margin-bottom: 16px;
+            margin-bottom: 15px;
         }
 
         label {
             display: block;
-            font-weight: 800;
+            font-weight: 900;
             margin-bottom: 7px;
         }
 
         input {
             width: 100%;
             border: 1px solid #e5e7eb;
-            border-radius: 12px;
+            border-radius: 14px;
             padding: 13px;
             font-size: 16px;
+            outline: none;
         }
 
-        .hint {
-            color: #6b7280;
-            font-size: 13px;
-            margin-top: 6px;
-            line-height: 1.4;
+        input:focus {
+            border-color: #22c55e;
+            box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12);
         }
 
         .btn {
             width: 100%;
             border: none;
-            border-radius: 12px;
+            border-radius: 14px;
             padding: 14px 18px;
-            font-weight: 900;
+            font-weight: 950;
             cursor: pointer;
             background: #22c55e;
             color: white;
@@ -113,7 +116,7 @@
 
         .footer-link a {
             color: #16a34a;
-            font-weight: 800;
+            font-weight: 900;
             text-decoration: none;
         }
     </style>
@@ -124,10 +127,7 @@
         <div class="logo">🐹</div>
 
         <h1>Вход</h1>
-
-        <div class="subtitle">
-            Войди в HabitHamster по логину или почте.
-        </div>
+        <div class="subtitle">Войди по логину или почте.</div>
 
         {% if error %}
             <div class="error">{{ error }}</div>
@@ -146,9 +146,6 @@
                     placeholder="gogita или example@mail.com"
                     required
                 />
-                <div class="hint">
-                    Можно ввести логин или email, указанный при регистрации.
-                </div>
             </div>
 
             <div class="form-group">
@@ -167,7 +164,7 @@
 
         <div class="footer-link">
             Нет аккаунта?
-            <a href="/api/register/">Создать аккаунт</a>
+            <a href="/api/register/">Создать</a>
         </div>
     </main>
 </body>

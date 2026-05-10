@@ -14,8 +14,11 @@
             margin: 0;
             min-height: 100vh;
             font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #f0fdf4, #fff7ed);
-            color: #1f2937;
+            background:
+                radial-gradient(circle at top left, #dcfce7 0, transparent 35%),
+                radial-gradient(circle at top right, #ffedd5 0, transparent 30%),
+                #f7f7f3;
+            color: #172033;
             display: grid;
             place-items: center;
             padding: 24px;
@@ -23,92 +26,83 @@
 
         .auth-card {
             width: 100%;
-            max-width: 500px;
+            max-width: 460px;
             background: white;
-            border-radius: 24px;
+            border-radius: 28px;
             padding: 34px;
-            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.12);
+            box-shadow: 0 26px 70px rgba(15, 23, 42, 0.14);
         }
 
         .logo {
-            width: 70px;
-            height: 70px;
-            border-radius: 20px;
-            border: 3px solid #111827;
+            width: 72px;
+            height: 72px;
+            border-radius: 24px;
+            border: 4px solid #111827;
             display: grid;
             place-items: center;
             font-size: 34px;
             margin-bottom: 18px;
+            background: white;
         }
 
         h1 {
             margin: 0;
-            font-size: 30px;
+            font-size: 32px;
+            letter-spacing: -0.04em;
         }
 
         .subtitle {
             color: #6b7280;
-            margin-top: 8px;
-            margin-bottom: 24px;
-            line-height: 1.5;
+            margin: 8px 0 22px;
+            line-height: 1.45;
         }
 
         .error {
-            background: #fef2f2;
+            background: #fee2e2;
             color: #991b1b;
             border: 1px solid #fecaca;
             padding: 12px;
-            border-radius: 12px;
+            border-radius: 14px;
             margin-bottom: 16px;
-            font-weight: 700;
+            font-weight: 800;
         }
 
         .form-group {
-            margin-bottom: 16px;
+            margin-bottom: 15px;
         }
 
         label {
             display: block;
-            font-weight: 800;
+            font-weight: 900;
             margin-bottom: 7px;
         }
 
         input {
             width: 100%;
             border: 1px solid #e5e7eb;
-            border-radius: 12px;
+            border-radius: 14px;
             padding: 13px;
             font-size: 16px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #22c55e;
+            box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12);
         }
 
         .hint {
             color: #6b7280;
             font-size: 13px;
             margin-top: 6px;
-            line-height: 1.4;
-        }
-
-        .rules {
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            border-radius: 14px;
-            padding: 14px;
-            margin-bottom: 18px;
-            color: #4b5563;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        .rules strong {
-            color: #111827;
         }
 
         .btn {
             width: 100%;
             border: none;
-            border-radius: 12px;
+            border-radius: 14px;
             padding: 14px 18px;
-            font-weight: 900;
+            font-weight: 950;
             cursor: pointer;
             background: #22c55e;
             color: white;
@@ -128,7 +122,7 @@
 
         .footer-link a {
             color: #16a34a;
-            font-weight: 800;
+            font-weight: 900;
             text-decoration: none;
         }
     </style>
@@ -139,23 +133,11 @@
         <div class="logo">🐹</div>
 
         <h1>Создать аккаунт</h1>
-
-        <div class="subtitle">
-            Зарегистрируйся в HabitHamster, чтобы сохранять привычки, прогресс и статистику.
-        </div>
+        <div class="subtitle">Почта, логин и пароль. Всё просто.</div>
 
         {% if error %}
             <div class="error">{{ error }}</div>
         {% endif %}
-
-        <div class="rules">
-            <strong>Правила регистрации:</strong><br />
-            — почта должна быть корректной;<br />
-            — логин минимум 3 символа;<br />
-            — логин не должен содержать пробелы;<br />
-            — пароль минимум 6 символов;<br />
-            — оба пароля должны совпадать.
-        </div>
 
         <form method="post">
             {% csrf_token %}
@@ -170,9 +152,6 @@
                     placeholder="example@mail.com"
                     required
                 />
-                <div class="hint">
-                    Почта нужна для аккаунта и дальнейшего входа.
-                </div>
             </div>
 
             <div class="form-group">
@@ -182,13 +161,11 @@
                     name="username"
                     type="text"
                     value="{{ username|default:'' }}"
-                    placeholder="Например: gogita"
+                    placeholder="gogita"
                     minlength="3"
                     required
                 />
-                <div class="hint">
-                    Логин должен быть уникальным. Минимум 3 символа, без пробелов.
-                </div>
+                <div class="hint">Минимум 3 символа, без пробелов.</div>
             </div>
 
             <div class="form-group">
@@ -201,9 +178,6 @@
                     minlength="6"
                     required
                 />
-                <div class="hint">
-                    Пароль сохраняется в базе не текстом, а в защищённом хешированном виде.
-                </div>
             </div>
 
             <div class="form-group">
