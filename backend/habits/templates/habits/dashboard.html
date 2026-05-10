@@ -167,13 +167,20 @@
         }
 
         .habit {
-            background: white;
-            border-radius: 16px;
-            padding: 18px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+        background: white;
+        border-radius: 16px;
+        padding: 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .habit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.08);
         }
 
         .habit-left {
@@ -604,10 +611,13 @@
                 const item = document.createElement("div");
                 item.className = "habit";
 
-                const statusButton = habit.is_completed_today
-                    ? `<button class="btn disabled" disabled>✓ Выполнено</button>`
-                    : `<button class="btn" onclick="completeHabit(${habit.id})">✓ Выполнить</button>`;
+                item.onclick = () => {
+                window.location.href = `/api/app/habits/${habit.id}/`;
+            };
 
+                const statusButton = habit.is_completed_today
+                    ? `<button class="btn disabled" disabled onclick="event.stopPropagation()">✓ Выполнено</button>`
+                    : `<button class="btn" onclick="event.stopPropagation(); completeHabit(${habit.id})">✓ Выполнить</button>`;
                 item.innerHTML = `
                     <div class="habit-left">
                         <div class="habit-icon">${getIcon(habit.icon)}</div>
