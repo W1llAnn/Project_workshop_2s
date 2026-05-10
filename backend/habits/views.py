@@ -17,16 +17,24 @@ from .serializers import (
 
 class DashboardPageView(TemplateView):
     """
-    Простая frontend-страница дашборда.
+    Frontend-страница главного дашборда.
 
     Открывается по адресу:
     /api/app/
-
-    Данные берёт через JavaScript из:
-    /api/dashboard/
     """
 
     template_name = "habits/dashboard.html"
+
+
+class HabitDetailPageView(TemplateView):
+    """
+    Frontend-страница детальной информации о привычке.
+
+    Открывается по адресу:
+    /api/app/habits/<id>/
+    """
+
+    template_name = "habits/habit_detail.html"
 
 
 class HabitViewSet(viewsets.ModelViewSet):
@@ -110,13 +118,7 @@ class HabitViewSet(viewsets.ModelViewSet):
         """
         Получить статистику по конкретной привычке.
 
-        Используется для экрана детальной информации о привычке:
-        - сколько всего отметок
-        - сколько выполнено
-        - сколько пропущено
-        - процент выполнения
-        - суммарное время
-        - последние записи выполнения
+        Используется для экрана детальной информации о привычке.
         """
 
         habit = self.get_object()
@@ -304,16 +306,16 @@ class DashboardAPIView(APIView):
 
         return Response(
             {
-               "profile": {
-                        "id": user.id,
-                        "username": user.username,
-                        "level": profile.level,
-                        "xp": profile.xp,
-                        "current_streak": profile.current_streak,
-                        "best_streak": profile.best_streak,
-                        "mascot_name": profile.mascot_name,
-                        "mascot_mood": profile.mascot_mood,
-                    },
+                "profile": {
+                    "id": user.id,
+                    "username": user.username,
+                    "level": profile.level,
+                    "xp": profile.xp,
+                    "current_streak": profile.current_streak,
+                    "best_streak": profile.best_streak,
+                    "mascot_name": profile.mascot_name,
+                    "mascot_mood": profile.mascot_mood,
+                },
                 "stats": {
                     "active_habits_count": active_habits_count,
                     "completed_today_count": completed_today_count,

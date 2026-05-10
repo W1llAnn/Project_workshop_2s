@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     DashboardAPIView,
     DashboardPageView,
+    HabitDetailPageView,
     HabitLogViewSet,
     HabitScheduleViewSet,
     HabitViewSet,
@@ -53,6 +54,11 @@ urlpatterns = [
         "app/",
         DashboardPageView.as_view(),
         name="dashboard-page",
+    ),
+    path(
+        "app/habits/<int:pk>/",
+        HabitDetailPageView.as_view(),
+        name="habit-detail-page",
     ),
 ]
 
