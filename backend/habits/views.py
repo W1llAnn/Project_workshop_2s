@@ -1,4 +1,5 @@
 from django.utils import timezone
+from django.views.generic import TemplateView
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -12,6 +13,20 @@ from .serializers import (
     TagCategorySerializer,
     TagSerializer,
 )
+
+
+class DashboardPageView(TemplateView):
+    """
+    Простая frontend-страница дашборда.
+
+    Открывается по адресу:
+    /api/app/
+
+    Данные берёт через JavaScript из:
+    /api/dashboard/
+    """
+
+    template_name = "habits/dashboard.html"
 
 
 class HabitViewSet(viewsets.ModelViewSet):
@@ -176,13 +191,6 @@ class HabitViewSet(viewsets.ModelViewSet):
 class HabitLogViewSet(viewsets.ModelViewSet):
     """
     API для логов выполнения привычек.
-
-    Что умеет:
-    - GET /api/habit-logs/ — получить список логов
-    - POST /api/habit-logs/ — создать лог выполнения
-    - GET /api/habit-logs/{id}/ — получить один лог
-    - PATCH /api/habit-logs/{id}/ — обновить лог
-    - DELETE /api/habit-logs/{id}/ — удалить лог
     """
 
     queryset = HabitLog.objects.all().order_by("-log_date", "-created_at")
@@ -192,11 +200,6 @@ class HabitLogViewSet(viewsets.ModelViewSet):
 class HabitScheduleViewSet(viewsets.ModelViewSet):
     """
     API для расписаний привычек.
-
-    Например:
-    - ежедневно
-    - еженедельно
-    - по конкретным дням недели
     """
 
     queryset = HabitSchedule.objects.all()
@@ -206,11 +209,6 @@ class HabitScheduleViewSet(viewsets.ModelViewSet):
 class TagCategoryViewSet(viewsets.ModelViewSet):
     """
     API для категорий тегов.
-
-    Например:
-    - Здоровье
-    - Осознанность
-    - Продуктивность
     """
 
     queryset = TagCategory.objects.all().order_by("name")
@@ -220,11 +218,6 @@ class TagCategoryViewSet(viewsets.ModelViewSet):
 class TagViewSet(viewsets.ModelViewSet):
     """
     API для тегов привычек.
-
-    Например:
-    - Фитнес
-    - Сон
-    - Медитация
     """
 
     queryset = Tag.objects.all().order_by("name")

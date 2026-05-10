@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HabitHamster Dashboard</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f7f7f4;
+            color: #1f2937;
+        }
+
+        .page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #dcfce7;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 10px;
+            padding: 12px 18px;
+            font-weight: 700;
+            cursor: pointer;
+            background: #22c55e;
+            color: white;
+        }
+
+        .btn:hover {
+            background: #16a34a;
+        }
+
+        .btn.secondary {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            cursor: default;
+        }
+
+        .btn.secondary:hover {
+            background: #f3f4f6;
+        }
+
+        .banner {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            background: linear-gradient(90deg, #f0fdf4, #fff7ed);
+            border-radius: 18px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .hamster {
+            width: 72px;
+            height: 72px;
+            border: 3px solid #111827;
+            border-radius: 16px;
+            display: grid;
+            place-items: center;
+            font-size: 32px;
+            background: white;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 22px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+            text-align: center;
+        }
+
+        .card-value {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .green {
+            color: #16a34a;
+        }
+
+        .orange {
+            color: #f97316;
+        }
+
+        .purple {
+            color: #9333ea;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 14px;
+        }
+
+        .habit-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .habit {
+            background: white;
+            border-radius: 16px;
+            padding: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+        }
+
+        .habit-left {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+        }
+
+        .habit-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #dcfce7;
+            display: grid;
+            place-items: center;
+            font-size: 20px;
+        }
+
+        .habit-title {
+            font-weight: 800;
+            font-size: 18px;
+        }
+
+        .habit-description {
+            color: #6b7280;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+
+        .calendar {
+            background: white;
+            border-radius: 16px;
+            padding: 22px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.04);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .day {
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px;
+            background: #f3f4f6;
+            font-size: 14px;
+        }
+
+        .day.done {
+            background: #bbf7d0;
+            color: #166534;
+            font-weight: 800;
+        }
+
+        .loading {
+            color: #6b7280;
+        }
+
+        .error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        @media (max-width: 900px) {
+            .cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .page {
+                padding: 18px;
+            }
+
+            .cards {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+
+            .habit {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <form style="display: none;">
+        {% csrf_token %}
+    </form>
+
+    <div class="page">
+        <header class="header">
+            <div class="brand">
+                <div class="avatar"></div>
+                <div>
+                    <h1>HabitHamster</h1>
+                    <div class="subtitle" id="profileSubtitle">Загрузка профиля...</div>
+                </div>
+            </div>
+
+            <button class="btn" onclick="reloadDashboard()">Обновить</button>
+        </header>
+
+        <div class="error" id="errorBox"></div>
+
+        <section class="banner">
+            <div class="hamster">🐹</div>
+            <div>
+                <h2 id="bannerTitle">Просыпайся и сияй!</h2>
+                <div class="subtitle" id="bannerText">Загружаем данные из backend...</div>
+            </div>
+        </section>
+
+        <section class="cards">
+            <div class="card">
+                <div class="card-value green" id="currentStreak">0</div>
+                <div class="subtitle">Активная серия</div>
+            </div>
+
+            <div class="card">
+                <div class="card-value" id="dailyProgress">0%</div>
+                <div class="subtitle">Прогресс дня</div>
+            </div>
+
+            <div class="card">
+                <div class="card-value orange" id="habitCounter">0/0</div>
+                <div class="subtitle">Привычек сегодня</div>
+            </div>
+
+            <div class="card">
+                <div class="card-value purple" id="xpCounter">0 XP</div>
+                <div class="subtitle">Опыт</div>
+            </div>
+        </section>
+
+        <main class="grid">
+            <section>
+                <div class="section-title">Сегодняшние привычки</div>
+                <div class="habit-list" id="habitList">
+                    <div class="loading">Загрузка привычек...</div>
+                </div>
+            </section>
+
+            <aside class="calendar">
+                <div class="section-title">Мини-календарь</div>
+                <div class="subtitle">Демо-блок для визуального соответствия прототипу</div>
+
+                <div class="calendar-grid">
+                    <div class="day">Пн</div>
+                    <div class="day">Вт</div>
+                    <div class="day">Ср</div>
+                    <div class="day">Чт</div>
+                    <div class="day">Пт</div>
+                    <div class="day">Сб</div>
+                    <div class="day">Вс</div>
+
+                    <div class="day done">1</div>
+                    <div class="day done">2</div>
+                    <div class="day done">3</div>
+                    <div class="day">4</div>
+                    <div class="day done">5</div>
+                    <div class="day">6</div>
+                    <div class="day">7</div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <script>
+        async function loadDashboard() {
+            hideError();
+
+            try {
+                const response = await fetch("/api/dashboard/");
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText);
+                }
+
+                const data = await response.json();
+
+                renderProfile(data.profile);
+                renderStats(data.stats);
+                renderHabits(data.today_habits);
+            } catch (error) {
+                console.error("Ошибка загрузки дашборда:", error);
+                showError("Не удалось загрузить данные дашборда. Проверь backend и консоль браузера.");
+            }
+        }
+
+        function renderProfile(profile) {
+            if (!profile) {
+                document.getElementById("profileSubtitle").textContent = "Профиль не найден";
+                return;
+            }
+
+            document.getElementById("profileSubtitle").textContent =
+                `Уровень ${profile.level} · ${profile.mascot_name}`;
+
+            document.getElementById("currentStreak").textContent =
+                profile.current_streak;
+
+            document.getElementById("xpCounter").textContent =
+                `${profile.xp} XP`;
+        }
+
+        function renderStats(stats) {
+            document.getElementById("dailyProgress").textContent =
+                `${stats.daily_progress}%`;
+
+            document.getElementById("habitCounter").textContent =
+                `${stats.completed_today_count}/${stats.active_habits_count}`;
+
+            document.getElementById("bannerText").textContent =
+                `Сегодня выполнено ${stats.completed_today_count} из ${stats.active_habits_count} привычек.`;
+        }
+
+        function renderHabits(habits) {
+            const habitList = document.getElementById("habitList");
+            habitList.innerHTML = "";
+
+            if (!habits || habits.length === 0) {
+                habitList.innerHTML = `<div class="loading">Активных привычек пока нет.</div>`;
+                return;
+            }
+
+            habits.forEach((habit) => {
+                const item = document.createElement("div");
+                item.className = "habit";
+
+                const statusButton = habit.is_completed_today
+                    ? `<button class="btn secondary" disabled>✓ Выполнено</button>`
+                    : `<button class="btn" onclick="completeHabit(${habit.id})">✓ Выполнить</button>`;
+
+                item.innerHTML = `
+                    <div class="habit-left">
+                        <div class="habit-icon">${getIcon(habit.icon)}</div>
+                        <div>
+                            <div class="habit-title">${escapeHtml(habit.title)}</div>
+                            <div class="habit-description">
+                                ${escapeHtml(habit.description || "Без описания")}
+                            </div>
+                        </div>
+                    </div>
+
+                    ${statusButton}
+                `;
+
+                habitList.appendChild(item);
+            });
+        }
+
+        function getIcon(icon) {
+            const icons = {
+                water: "💧",
+                yoga: "🧘",
+                book: "📘",
+                fitness: "💪",
+                sleep: "🌙",
+            };
+
+            return icons[icon] || "✅";
+        }
+
+        function getCsrfToken() {
+            const tokenInput = document.querySelector("[name=csrfmiddlewaretoken]");
+
+            if (tokenInput) {
+                return tokenInput.value;
+            }
+
+            return "";
+        }
+
+        async function completeHabit(habitId) {
+            hideError();
+
+            const csrfToken = getCsrfToken();
+
+            try {
+                const response = await fetch(`/api/habits/${habitId}/complete/`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrfToken,
+                    },
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText);
+                }
+
+                await loadDashboard();
+            } catch (error) {
+                console.error("Ошибка при выполнении привычки:", error);
+                showError("Не удалось отметить привычку. Проверь консоль браузера.");
+            }
+        }
+
+        async function reloadDashboard() {
+            await loadDashboard();
+        }
+
+        function showError(message) {
+            const errorBox = document.getElementById("errorBox");
+            errorBox.textContent = message;
+            errorBox.style.display = "block";
+        }
+
+        function hideError() {
+            const errorBox = document.getElementById("errorBox");
+            errorBox.textContent = "";
+            errorBox.style.display = "none";
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll("&", "&amp;")
+                .replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;")
+                .replaceAll('"', "&quot;")
+                .replaceAll("'", "&#039;");
+        }
+
+        loadDashboard();
+    </script>
+</body>
+</html>
