@@ -1,7 +1,9 @@
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.utils import timezone
 from django.views.generic import TemplateView
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -15,44 +17,60 @@ from .serializers import (
 )
 
 
-class DashboardPageView(TemplateView):
+class DashboardPageView(LoginRequiredMixin, TemplateView):
     """
-    Frontend-страница главного дашборда.
+    Frontend-страница главного приложения.
 
-    Открывается по адресу:
-    /api/app/
+    Если пользователь не вошёл, Django отправит его на:
+    /api/login/
     """
 
     template_name = "habits/dashboard.html"
+    login_url = "/api/login/"
 
 
-class HabitDetailPageView(TemplateView):
+class HabitDetailPageView(LoginRequiredMixin, TemplateView):
     """
-    Frontend-страница детальной информации о привычке.
+    Отдельная frontend-страница детальной информации о привычке.
 
-    Открывается по адресу:
+    Сейчас основной detail-экран уже есть внутри /api/app/,
+    но эту страницу оставляем как дополнительный прямой URL:
     /api/app/habits/<id>/
     """
 
     template_name = "habits/habit_detail.html"
+    login_url = "/api/login/"
 
 
 class HabitViewSet(viewsets.ModelViewSet):
     """
-    API для привычек.
+    API для привычек текущего пользователя.
 
-    Что умеет:
-    - GET /api/habits/ — получить список привычек
-    - POST /api/habits/ — создать привычку
-    - GET /api/habits/{id}/ — получить одну привычку
-    - PATCH /api/habits/{id}/ — частично обновить привычку
-    - DELETE /api/habits/{id}/ — удалить привычку
-    - POST /api/habits/{id}/complete/ — отметить привычку выполненной
-    - GET /api/habits/{id}/stats/ — получить статистику по привычке
+    Теперь пользователь видит и изменяет только свои привычки.
     """
 
-    queryset = Habit.objects.all().order_by("-created_at")
     serializer_class = HabitSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Возвращаем только привычки текущего авторизованного пользователя.
+        """
+
+        return Habit.objects.filter(
+            user=self.request.user,
+        ).order_by("-created_at")
+
+    def perform_create(self, serializer):
+        """
+        При создании привычки автоматически привязываем её
+        к текущему авторизованному пользователю.
+
+        Даже если frontend случайно передаст другой user_id,
+        backend всё равно поставит request.user.
+        """
+
+        serializer.save(user=self.request.user)
 
     @action(
         detail=True,
@@ -70,14 +88,9 @@ class HabitViewSet(viewsets.ModelViewSet):
         habit = self.get_object()
         today = timezone.localdate()
 
-        user = request.user
-
-        if not user.is_authenticated:
-            user = habit.user
-
         habit_log, created = HabitLog.objects.update_or_create(
             habit=habit,
-            user=user,
+            user=request.user,
             log_date=today,
             defaults={
                 "status": "done",
@@ -116,21 +129,14 @@ class HabitViewSet(viewsets.ModelViewSet):
     )
     def stats(self, request, pk=None):
         """
-        Получить статистику по конкретной привычке.
-
-        Используется для экрана детальной информации о привычке.
+        Получить статистику по конкретной привычке текущего пользователя.
         """
 
         habit = self.get_object()
 
-        user = request.user
-
-        if not user.is_authenticated:
-            user = habit.user
-
         logs = HabitLog.objects.filter(
             habit=habit,
-            user=user,
+            user=request.user,
         ).order_by("-log_date", "-created_at")
 
         total_logs = logs.count()
@@ -192,73 +198,73 @@ class HabitViewSet(viewsets.ModelViewSet):
 
 class HabitLogViewSet(viewsets.ModelViewSet):
     """
-    API для логов выполнения привычек.
+    API для логов выполнения привычек текущего пользователя.
     """
 
-    queryset = HabitLog.objects.all().order_by("-log_date", "-created_at")
     serializer_class = HabitLogSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return HabitLog.objects.filter(
+            user=self.request.user,
+        ).order_by("-log_date", "-created_at")
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
 
 
 class HabitScheduleViewSet(viewsets.ModelViewSet):
     """
-    API для расписаний привычек.
+    API для расписаний привычек текущего пользователя.
     """
 
-    queryset = HabitSchedule.objects.all()
     serializer_class = HabitScheduleSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return HabitSchedule.objects.filter(
+            habit__user=self.request.user,
+        )
 
 
 class TagCategoryViewSet(viewsets.ModelViewSet):
     """
     API для категорий тегов.
+
+    Пока категории тегов общие для всех пользователей.
     """
 
     queryset = TagCategory.objects.all().order_by("name")
     serializer_class = TagCategorySerializer
+    permission_classes = [IsAuthenticated]
 
 
 class TagViewSet(viewsets.ModelViewSet):
     """
-    API для тегов привычек.
+    API для тегов.
+
+    Пока теги общие для всех пользователей.
     """
 
     queryset = Tag.objects.all().order_by("name")
     serializer_class = TagSerializer
+    permission_classes = [IsAuthenticated]
 
 
 class DashboardAPIView(APIView):
     """
-    API для главного дашборда.
+    API для главного дашборда текущего пользователя.
 
     Возвращает:
-    - профиль пользователя
-    - статистику по привычкам
-    - список активных привычек на сегодня
+    - профиль текущего пользователя
+    - статистику по его привычкам
+    - список его активных привычек на сегодня
     """
+
+    permission_classes = [IsAuthenticated]
 
     def get(self, request):
         user = request.user
-
-        if not user.is_authenticated:
-            user = None
-
-        if user is None:
-            first_habit = Habit.objects.select_related("user").first()
-
-            if first_habit is None:
-                return Response(
-                    {
-                        "profile": None,
-                        "stats": {
-                            "active_habits_count": 0,
-                            "completed_today_count": 0,
-                            "daily_progress": 0,
-                        },
-                        "today_habits": [],
-                    }
-                )
-
-            user = first_habit.user
 
         profile, _ = UserProfile.objects.get_or_create(user=user)
 
@@ -309,6 +315,7 @@ class DashboardAPIView(APIView):
                 "profile": {
                     "id": user.id,
                     "username": user.username,
+                    "email": user.email,
                     "level": profile.level,
                     "xp": profile.xp,
                     "current_streak": profile.current_streak,
