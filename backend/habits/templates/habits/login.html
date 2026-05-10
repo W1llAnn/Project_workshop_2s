@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HabitHamster — Вход</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #f0fdf4, #eff6ff);
+            color: #1f2937;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 440px;
+            background: white;
+            border-radius: 24px;
+            padding: 34px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.12);
+        }
+
+        .logo {
+            width: 70px;
+            height: 70px;
+            border-radius: 20px;
+            border: 3px solid #111827;
+            display: grid;
+            place-items: center;
+            font-size: 34px;
+            margin-bottom: 18px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 30px;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            margin-top: 8px;
+            margin-bottom: 24px;
+            line-height: 1.5;
+        }
+
+        .error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            font-weight: 700;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-weight: 800;
+            margin-bottom: 7px;
+        }
+
+        input {
+            width: 100%;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 13px;
+            font-size: 16px;
+        }
+
+        .hint {
+            color: #6b7280;
+            font-size: 13px;
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+
+        .btn {
+            width: 100%;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 18px;
+            font-weight: 900;
+            cursor: pointer;
+            background: #22c55e;
+            color: white;
+            font-size: 16px;
+            margin-top: 8px;
+        }
+
+        .btn:hover {
+            background: #16a34a;
+        }
+
+        .footer-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #6b7280;
+        }
+
+        .footer-link a {
+            color: #16a34a;
+            font-weight: 800;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="auth-card">
+        <div class="logo">🐹</div>
+
+        <h1>Вход</h1>
+
+        <div class="subtitle">
+            Войди в HabitHamster по логину или почте.
+        </div>
+
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="login">Логин или почта</label>
+                <input
+                    id="login"
+                    name="login"
+                    type="text"
+                    value="{{ login|default:'' }}"
+                    placeholder="gogita или example@mail.com"
+                    required
+                />
+                <div class="hint">
+                    Можно ввести логин или email, указанный при регистрации.
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Пароль</label>
+                <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    placeholder="Твой пароль"
+                    required
+                />
+            </div>
+
+            <button class="btn" type="submit">Войти</button>
+        </form>
+
+        <div class="footer-link">
+            Нет аккаунта?
+            <a href="/api/register/">Создать аккаунт</a>
+        </div>
+    </main>
+</body>
+</html>

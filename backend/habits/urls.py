@@ -1,6 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
+from .auth_views import login_page, logout_page, register_page
 from .views import (
     DashboardAPIView,
     DashboardPageView,
@@ -45,6 +46,21 @@ router.register(
 )
 
 urlpatterns = [
+    path(
+        "register/",
+        register_page,
+        name="register-page",
+    ),
+    path(
+        "login/",
+        login_page,
+        name="login-page",
+    ),
+    path(
+        "logout/",
+        logout_page,
+        name="logout-page",
+    ),
     path(
         "dashboard/",
         DashboardAPIView.as_view(),
