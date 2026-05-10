@@ -304,15 +304,16 @@ class DashboardAPIView(APIView):
 
         return Response(
             {
-                "profile": {
-                    "username": user.username,
-                    "level": profile.level,
-                    "xp": profile.xp,
-                    "current_streak": profile.current_streak,
-                    "best_streak": profile.best_streak,
-                    "mascot_name": profile.mascot_name,
-                    "mascot_mood": profile.mascot_mood,
-                },
+               "profile": {
+                        "id": user.id,
+                        "username": user.username,
+                        "level": profile.level,
+                        "xp": profile.xp,
+                        "current_streak": profile.current_streak,
+                        "best_streak": profile.best_streak,
+                        "mascot_name": profile.mascot_name,
+                        "mascot_mood": profile.mascot_mood,
+                    },
                 "stats": {
                     "active_habits_count": active_habits_count,
                     "completed_today_count": completed_today_count,

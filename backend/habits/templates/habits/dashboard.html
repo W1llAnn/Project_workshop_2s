@@ -53,6 +53,12 @@
             margin-top: 4px;
         }
 
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
         .btn {
             border: none;
             border-radius: 10px;
@@ -71,10 +77,20 @@
             background: #f3f4f6;
             color: #374151;
             border: 1px solid #e5e7eb;
-            cursor: default;
         }
 
         .btn.secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .btn.disabled {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            cursor: default;
+        }
+
+        .btn.disabled:hover {
             background: #f3f4f6;
         }
 
@@ -229,6 +245,79 @@
             display: none;
         }
 
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 10;
+        }
+
+        .modal {
+            width: 100%;
+            max-width: 520px;
+            background: white;
+            border-radius: 20px;
+            padding: 26px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.18);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 800;
+        }
+
+        .close-btn {
+            border: none;
+            background: #f3f4f6;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 12px;
+            font-size: 15px;
+        }
+
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
         @media (max-width: 900px) {
             .cards {
                 grid-template-columns: repeat(2, 1fr);
@@ -254,10 +343,20 @@
                 gap: 16px;
             }
 
+            .header-actions {
+                width: 100%;
+                flex-direction: column;
+                align-items: stretch;
+            }
+
             .habit {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 16px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -278,7 +377,10 @@
                 </div>
             </div>
 
-            <button class="btn" onclick="reloadDashboard()">Обновить</button>
+            <div class="header-actions">
+                <button class="btn secondary" onclick="reloadDashboard()">Обновить</button>
+                <button class="btn" onclick="openCreateHabitModal()">+ Новая привычка</button>
+            </div>
         </header>
 
         <div class="error" id="errorBox"></div>
@@ -346,7 +448,97 @@
         </main>
     </div>
 
+    <div class="modal-backdrop" id="createHabitModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title">Новая привычка</div>
+                    <div class="subtitle">Создание привычки через API</div>
+                </div>
+                <button class="close-btn" onclick="closeCreateHabitModal()">×</button>
+            </div>
+
+            <form id="createHabitForm" onsubmit="createHabit(event)">
+                <div class="form-group">
+                    <label for="habitTitle">Название привычки</label>
+                    <input
+                        id="habitTitle"
+                        type="text"
+                        placeholder="Например: Утренняя йога"
+                        required
+                    />
+                </div>
+
+                <div class="form-group">
+                    <label for="habitDescription">Описание</label>
+                    <textarea
+                        id="habitDescription"
+                        placeholder="Например: 15 минут каждое утро"
+                    ></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="habitIcon">Иконка</label>
+                        <select id="habitIcon">
+                            <option value="water">💧 Вода</option>
+                            <option value="yoga">🧘 Йога</option>
+                            <option value="book">📘 Книга</option>
+                            <option value="fitness">💪 Фитнес</option>
+                            <option value="sleep">🌙 Сон</option>
+                            <option value="check">✅ Другое</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="habitTargetType">Тип цели</label>
+                        <select id="habitTargetType">
+                            <option value="check">Отметка</option>
+                            <option value="minutes">Минуты</option>
+                            <option value="count">Количество</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="habitTargetValue">Целевое значение</label>
+                        <input
+                            id="habitTargetValue"
+                            type="number"
+                            min="1"
+                            value="1"
+                            required
+                        />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="habitTargetUnit">Единица измерения</label>
+                        <select id="habitTargetUnit">
+                            <option value="">Без единицы</option>
+                            <option value="times">раз(а)</option>
+                            <option value="minutes">минут</option>
+                            <option value="pages">страниц</option>
+                            <option value="steps">шагов</option>
+                            <option value="glasses">стаканов</option>
+                            <option value="kilometers">километров</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="habitColor">Цвет</label>
+                    <input id="habitColor" type="color" value="#4CAF50" />
+                </div>
+
+                <button class="btn" type="submit">Создать привычку</button>
+            </form>
+        </div>
+    </div>
+
     <script>
+        let currentUserId = null;
+
         async function loadDashboard() {
             hideError();
 
@@ -371,9 +563,12 @@
 
         function renderProfile(profile) {
             if (!profile) {
+                currentUserId = null;
                 document.getElementById("profileSubtitle").textContent = "Профиль не найден";
                 return;
             }
+
+            currentUserId = profile.id;
 
             document.getElementById("profileSubtitle").textContent =
                 `Уровень ${profile.level} · ${profile.mascot_name}`;
@@ -410,7 +605,7 @@
                 item.className = "habit";
 
                 const statusButton = habit.is_completed_today
-                    ? `<button class="btn secondary" disabled>✓ Выполнено</button>`
+                    ? `<button class="btn disabled" disabled>✓ Выполнено</button>`
                     : `<button class="btn" onclick="completeHabit(${habit.id})">✓ Выполнить</button>`;
 
                 item.innerHTML = `
@@ -438,6 +633,7 @@
                 book: "📘",
                 fitness: "💪",
                 sleep: "🌙",
+                check: "✅",
             };
 
             return icons[icon] || "✅";
@@ -477,6 +673,64 @@
                 console.error("Ошибка при выполнении привычки:", error);
                 showError("Не удалось отметить привычку. Проверь консоль браузера.");
             }
+        }
+
+        async function createHabit(event) {
+            event.preventDefault();
+            hideError();
+
+            if (!currentUserId) {
+                showError("Не найден user_id. Проверь /api/dashboard/.");
+                return;
+            }
+
+            const csrfToken = getCsrfToken();
+
+            const payload = {
+                user: currentUserId,
+                title: document.getElementById("habitTitle").value,
+                description: document.getElementById("habitDescription").value,
+                target_type: document.getElementById("habitTargetType").value,
+                target_value: Number(document.getElementById("habitTargetValue").value),
+                target_unit: document.getElementById("habitTargetUnit").value,
+                color: document.getElementById("habitColor").value,
+                icon: document.getElementById("habitIcon").value,
+                is_active: true,
+            };
+
+            try {
+                const response = await fetch("/api/habits/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": csrfToken,
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText);
+                }
+
+                closeCreateHabitModal();
+                document.getElementById("createHabitForm").reset();
+                document.getElementById("habitTargetValue").value = 1;
+                document.getElementById("habitColor").value = "#4CAF50";
+
+                await loadDashboard();
+            } catch (error) {
+                console.error("Ошибка создания привычки:", error);
+                showError("Не удалось создать привычку. Проверь консоль браузера.");
+            }
+        }
+
+        function openCreateHabitModal() {
+            document.getElementById("createHabitModal").style.display = "flex";
+        }
+
+        function closeCreateHabitModal() {
+            document.getElementById("createHabitModal").style.display = "none";
         }
 
         async function reloadDashboard() {
