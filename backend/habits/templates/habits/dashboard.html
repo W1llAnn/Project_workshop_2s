@@ -26,7 +26,6 @@
             --muted: #6b7280;
             --border: #e5e7eb;
             --bg: #f7f7f3;
-            --card: #ffffff;
             --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
             --shadow-soft: 0 10px 25px rgba(15, 23, 42, 0.06);
         }
@@ -504,6 +503,12 @@
             border-color: #fed7aa;
         }
 
+        .meta-chip.archived {
+            background: #f3f4f6;
+            color: #4b5563;
+            border-color: #d1d5db;
+        }
+
         .habit-actions {
             display: flex;
             gap: 9px;
@@ -514,7 +519,7 @@
 
         .toolbar {
             display: grid;
-            grid-template-columns: 1fr auto auto;
+            grid-template-columns: 1fr auto auto auto;
             gap: 10px;
             margin-bottom: 18px;
         }
@@ -1106,6 +1111,10 @@
             box-shadow: 0 28px 70px rgba(0, 0, 0, 0.25);
         }
 
+        .modal.small {
+            max-width: 460px;
+        }
+
         .modal-header {
             display: flex;
             justify-content: space-between;
@@ -1466,7 +1475,7 @@
                 <div class="hamster-box">📅</div>
                 <div>
                     <h2>Календарь привычек</h2>
-                    <div class="subtitle">Зелёный — идеальный день, жёлтый — частично, серый — пусто.</div>
+                    <div class="subtitle">Выбери день и отметь привычку за нужную дату.</div>
                 </div>
             </section>
 
@@ -1519,31 +1528,60 @@
 
             <section class="cards">
                 <div class="stat-card">
-                    <div class="stat-label">Всего</div>
-                    <div class="stat-value green" id="analyticsTotalHabits">0</div>
-                    <div class="stat-hint">активные привычки</div>
-                </div>
-
-                <div class="stat-card">
                     <div class="stat-label">Сегодня</div>
-                    <div class="stat-value blue" id="analyticsDoneToday">0</div>
-                    <div class="stat-hint">выполнено</div>
+                    <div class="stat-value green" id="analyticsTodayProgress">0%</div>
+                    <div class="stat-hint">прогресс дня</div>
                 </div>
 
                 <div class="stat-card">
-                    <div class="stat-label">Процент</div>
-                    <div class="stat-value orange" id="analyticsDayRate">0%</div>
-                    <div class="stat-hint">день</div>
+                    <div class="stat-label">Неделя</div>
+                    <div class="stat-value blue" id="analyticsWeekProgress">0%</div>
+                    <div class="stat-hint">последние 7 дней</div>
                 </div>
 
                 <div class="stat-card">
-                    <div class="stat-label">XP</div>
-                    <div class="stat-value purple" id="analyticsXP">0</div>
-                    <div class="stat-hint">опыт</div>
+                    <div class="stat-label">Месяц</div>
+                    <div class="stat-value orange" id="analyticsMonthProgress">0%</div>
+                    <div class="stat-hint">текущий месяц</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-label">Идеальные дни</div>
+                    <div class="stat-value purple" id="analyticsPerfectDays">0</div>
+                    <div class="stat-hint">за 7 дней</div>
                 </div>
             </section>
 
             <section class="analytics-grid">
+                <div class="panel">
+                    <div class="panel-title">Сводка</div>
+
+                    <div class="profile-line">
+                        <span>Активных привычек</span>
+                        <strong id="analyticsTotalHabits">0</strong>
+                    </div>
+
+                    <div class="profile-line">
+                        <span>Выполнено сегодня</span>
+                        <strong id="analyticsDoneToday">0</strong>
+                    </div>
+
+                    <div class="profile-line">
+                        <span>Лучшая привычка</span>
+                        <strong id="analyticsBestHabit">—</strong>
+                    </div>
+
+                    <div class="profile-line">
+                        <span>Слабая привычка</span>
+                        <strong id="analyticsWeakestHabit">—</strong>
+                    </div>
+
+                    <div class="profile-line">
+                        <span>Лучший день недели</span>
+                        <strong id="analyticsBestWeekday">—</strong>
+                    </div>
+                </div>
+
                 <div class="panel">
                     <div class="panel-title">Типы целей</div>
                     <div class="donut-wrap">
@@ -1565,24 +1603,11 @@
                         </div>
                     </div>
                 </div>
-
-                <div class="panel">
-                    <div class="panel-title">Топ привычек</div>
-                    <div class="history-list" id="topHabitsList"></div>
-                </div>
             </section>
 
             <div class="panel">
                 <div class="panel-title">Динамика недели</div>
-                <div class="bar-chart">
-                    <div class="bar-item"><div class="bar" style="height: 55%;"></div><span>Пн</span></div>
-                    <div class="bar-item"><div class="bar" style="height: 40%;"></div><span>Вт</span></div>
-                    <div class="bar-item"><div class="bar strong" style="height: 78%;"></div><span>Ср</span></div>
-                    <div class="bar-item"><div class="bar" style="height: 65%;"></div><span>Чт</span></div>
-                    <div class="bar-item"><div class="bar" style="height: 50%;"></div><span>Пт</span></div>
-                    <div class="bar-item"><div class="bar low" style="height: 35%;"></div><span>Сб</span></div>
-                    <div class="bar-item"><div class="bar" style="height: 30%;"></div><span>Вс</span></div>
-                </div>
+                <div class="bar-chart" id="realWeekChart"></div>
             </div>
         </section>
 
@@ -1591,7 +1616,7 @@
                 <div class="panel-head">
                     <div>
                         <div class="panel-title">Мои привычки</div>
-                        <div class="subtitle">Ищи, фильтруй, редактируй и отключай привычки.</div>
+                        <div class="subtitle">Активные, архив, поиск, фильтры и восстановление.</div>
                     </div>
                     <button class="btn" type="button" onclick="openCreateHabitModal()">+ Добавить</button>
                 </div>
@@ -1603,6 +1628,11 @@
                         placeholder="Поиск по названию..."
                         oninput="applyHabitFilters()"
                     />
+
+                    <select id="habitScopeFilter" onchange="applyHabitFilters()">
+                        <option value="active">Активные</option>
+                        <option value="archived">Архив</option>
+                    </select>
 
                     <select id="habitStatusFilter" onchange="applyHabitFilters()">
                         <option value="all">Все</option>
@@ -1659,6 +1689,11 @@
                     <div class="profile-line">
                         <span>Лучшая серия</span>
                         <strong id="profileBestStreak">0</strong>
+                    </div>
+
+                    <div class="profile-line">
+                        <span>Дата регистрации</span>
+                        <strong id="profileDateJoined">—</strong>
                     </div>
 
                     <div class="profile-line">
@@ -1840,13 +1875,33 @@
         </div>
     </div>
 
+    <div class="modal-backdrop" id="confirmModal">
+        <div class="modal small">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title" id="confirmTitle">Подтверждение</div>
+                    <div class="subtitle" id="confirmText">Вы уверены?</div>
+                </div>
+                <button class="close-btn" type="button" onclick="closeConfirmModal()">×</button>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn secondary" type="button" onclick="closeConfirmModal()">Отмена</button>
+                <button class="btn danger" id="confirmActionButton" type="button">Отключить</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let dashboardData = null;
+        let analyticsData = null;
         let currentUserId = null;
         let selectedHabitId = null;
         let toastTimer = null;
         let allHabitsCache = [];
+        let archivedHabitsCache = [];
         let editingHabitId = null;
+        let confirmAction = null;
 
         const todayDate = new Date();
         let currentCalendarYear = todayDate.getFullYear();
@@ -1912,15 +1967,47 @@
 
                 dashboardData = await response.json();
 
+                await loadArchivedHabits();
+                await loadAnalytics();
+
                 renderProfile(dashboardData.profile);
                 renderDashboardStats(dashboardData.stats);
                 renderHabits(dashboardData.today_habits);
-                renderAnalytics(dashboardData);
-
+                renderAnalyticsSummary();
                 await loadCalendar();
             } catch (error) {
                 console.error(error);
                 showToast("Не удалось загрузить данные.", "error");
+            }
+        }
+
+        async function loadArchivedHabits() {
+            try {
+                const response = await fetch("/api/habits/?is_active=false");
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                archivedHabitsCache = await response.json();
+            } catch (error) {
+                console.error(error);
+                archivedHabitsCache = [];
+            }
+        }
+
+        async function loadAnalytics() {
+            try {
+                const response = await fetch("/api/analytics/");
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                analyticsData = await response.json();
+            } catch (error) {
+                console.error(error);
+                analyticsData = null;
             }
         }
 
@@ -1938,7 +2025,6 @@
 
             document.getElementById("currentStreak").textContent = profile.current_streak;
             document.getElementById("xpCounter").textContent = `${profile.xp} XP`;
-            document.getElementById("analyticsXP").textContent = profile.xp;
 
             document.getElementById("profileUsername").textContent = profile.username;
             document.getElementById("profileEmail").textContent = profile.email || "Почта не указана";
@@ -1946,6 +2032,7 @@
             document.getElementById("profileXp").textContent = `${profile.xp} XP`;
             document.getElementById("profileCurrentStreak").textContent = `${profile.current_streak} дней`;
             document.getElementById("profileBestStreak").textContent = `${profile.best_streak} дней`;
+            document.getElementById("profileDateJoined").textContent = profile.date_joined || "—";
             document.getElementById("profileMascotName").textContent = profile.mascot_name;
             document.getElementById("profileMascotMood").textContent = profile.mascot_mood;
         }
@@ -1977,23 +2064,30 @@
         function renderHabits(habits) {
             allHabitsCache = habits || [];
 
-            renderHabitList("dashboardHabitList", allHabitsCache);
+            renderHabitList("dashboardHabitList", allHabitsCache, "dashboard");
             applyHabitFilters();
             renderAchievements();
         }
 
-        function renderHabitList(containerId, habits) {
+        function renderHabitList(containerId, habits, mode = "active") {
             const container = document.getElementById(containerId);
             container.innerHTML = "";
 
             if (!habits || habits.length === 0) {
+                const emptyText = mode === "archived"
+                    ? "В архиве пока нет привычек"
+                    : "Пока нет привычек";
+
+                const emptyHint = mode === "archived"
+                    ? "Отключённые привычки появятся здесь."
+                    : "Создай первую привычку.";
+
                 container.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-icon">🐹</div>
-                        <strong>Пока нет привычек</strong>
-                        Создай первую привычку.
-                        <br /><br />
-                        <button class="btn" type="button" onclick="openCreateHabitModal()">+ Создать</button>
+                        <strong>${emptyText}</strong>
+                        ${emptyHint}
+                        ${mode === "archived" ? "" : `<br /><br /><button class="btn" type="button" onclick="openCreateHabitModal()">+ Создать</button>`}
                     </div>
                 `;
                 return;
@@ -2003,13 +2097,23 @@
                 const card = document.createElement("div");
                 card.className = "habit-card";
 
-                const statusChip = habit.is_completed_today
-                    ? `<span class="meta-chip done">✓ Выполнено</span>`
-                    : `<span class="meta-chip todo">○ Нужно выполнить</span>`;
+                const isArchived = habit.is_active === false || mode === "archived";
 
-                const completeButton = habit.is_completed_today
-                    ? `<button class="btn disabled" type="button" disabled>✓ Готово</button>`
-                    : `<button class="btn" type="button" onclick="completeHabit(${habit.id})">✓ Выполнить</button>`;
+                const statusChip = isArchived
+                    ? `<span class="meta-chip archived">Архив</span>`
+                    : habit.is_completed_today
+                        ? `<span class="meta-chip done">✓ Выполнено</span>`
+                        : `<span class="meta-chip todo">○ Нужно выполнить</span>`;
+
+                const completeButton = isArchived
+                    ? ""
+                    : habit.is_completed_today
+                        ? `<button class="btn disabled" type="button" disabled>✓ Готово</button>`
+                        : `<button class="btn" type="button" onclick="completeHabit(${habit.id})">✓ Выполнить</button>`;
+
+                const archiveButton = isArchived
+                    ? `<button class="btn" type="button" onclick="restoreHabit(${habit.id})">Восстановить</button>`
+                    : `<button class="btn danger" type="button" onclick="openDisableConfirm(${habit.id})">Отключить</button>`;
 
                 card.innerHTML = `
                     <div class="habit-left">
@@ -2030,9 +2134,9 @@
 
                     <div class="habit-actions">
                         <button class="btn secondary" type="button" onclick="openHabitDetail(${habit.id})">Подробнее</button>
-                        <button class="btn secondary" type="button" onclick="openEditHabitModal(${habit.id})">Редактировать</button>
+                        ${isArchived ? "" : `<button class="btn secondary" type="button" onclick="openEditHabitModal(${habit.id})">Редактировать</button>`}
                         ${completeButton}
-                        <button class="btn danger" type="button" onclick="disableHabit(${habit.id})">Отключить</button>
+                        ${archiveButton}
                     </div>
                 `;
 
@@ -2040,60 +2144,106 @@
             });
         }
 
-        function renderAnalytics(data) {
-            const habits = data.today_habits || [];
-            const stats = data.stats || {};
+        function applyHabitFilters() {
+            const searchValue = document
+                .getElementById("habitSearchInput")
+                ?.value
+                .trim()
+                .toLowerCase() || "";
+
+            const scopeFilter = document.getElementById("habitScopeFilter")?.value || "active";
+            const statusFilter = document.getElementById("habitStatusFilter")?.value || "all";
+            const typeFilter = document.getElementById("habitTypeFilter")?.value || "all";
+
+            let sourceHabits = scopeFilter === "archived"
+                ? [...archivedHabitsCache]
+                : [...allHabitsCache];
+
+            if (searchValue) {
+                sourceHabits = sourceHabits.filter((habit) => {
+                    return habit.title.toLowerCase().includes(searchValue);
+                });
+            }
+
+            if (scopeFilter === "active") {
+                if (statusFilter === "done") {
+                    sourceHabits = sourceHabits.filter((habit) => habit.is_completed_today);
+                }
+
+                if (statusFilter === "todo") {
+                    sourceHabits = sourceHabits.filter((habit) => !habit.is_completed_today);
+                }
+            }
+
+            if (typeFilter !== "all") {
+                sourceHabits = sourceHabits.filter((habit) => habit.target_type === typeFilter);
+            }
+
+            renderHabitList("allHabitList", sourceHabits, scopeFilter);
+        }
+
+        function renderAnalyticsSummary() {
+            const habits = dashboardData?.today_habits || [];
 
             const checkCount = habits.filter((habit) => habit.target_type === "check").length;
             const minutesCount = habits.filter((habit) => habit.target_type === "minutes").length;
             const countCount = habits.filter((habit) => habit.target_type === "count").length;
 
-            document.getElementById("analyticsTotalHabits").textContent = stats.active_habits_count || 0;
-            document.getElementById("analyticsDoneToday").textContent = stats.completed_today_count || 0;
-            document.getElementById("analyticsDayRate").textContent = `${stats.daily_progress || 0}%`;
-
             document.getElementById("checkCount").textContent = checkCount;
             document.getElementById("minutesCount").textContent = minutesCount;
             document.getElementById("countCount").textContent = countCount;
 
+            if (!analyticsData) {
+                return;
+            }
+
+            document.getElementById("analyticsTodayProgress").textContent = `${analyticsData.today_progress}%`;
+            document.getElementById("analyticsWeekProgress").textContent = `${analyticsData.week_progress}%`;
+            document.getElementById("analyticsMonthProgress").textContent = `${analyticsData.month_progress}%`;
+            document.getElementById("analyticsPerfectDays").textContent = analyticsData.perfect_days_last_7;
+
+            document.getElementById("analyticsTotalHabits").textContent = analyticsData.total_habits;
+            document.getElementById("analyticsDoneToday").textContent = analyticsData.completed_today;
+            document.getElementById("analyticsBestHabit").textContent = analyticsData.best_habit?.title || "—";
+            document.getElementById("analyticsWeakestHabit").textContent = analyticsData.weakest_habit?.title || "—";
+            document.getElementById("analyticsBestWeekday").textContent = analyticsData.best_weekday || "—";
+
             document.getElementById("analyticsInsight").textContent =
-                stats.daily_progress >= 80
-                    ? "Отличный день. Темп высокий."
-                    : "Есть шанс закрыть ещё одну привычку.";
+                analyticsData.week_progress >= 70
+                    ? "Сильная неделя. Привычки закрепляются."
+                    : "Есть шанс усилить регулярность на этой неделе.";
 
-            const topHabitsList = document.getElementById("topHabitsList");
-            topHabitsList.innerHTML = "";
+            renderRealWeekChart(analyticsData.week_days || []);
+        }
 
-            if (habits.length === 0) {
-                topHabitsList.innerHTML = `
+        function renderRealWeekChart(days) {
+            const chart = document.getElementById("realWeekChart");
+            chart.innerHTML = "";
+
+            if (!days.length) {
+                chart.innerHTML = `
                     <div class="empty-state">
                         <div class="empty-icon">📊</div>
                         <strong>Нет данных</strong>
-                        Создай привычки для аналитики.
+                        Выполни привычки, чтобы увидеть график.
                     </div>
                 `;
                 return;
             }
 
-            habits.slice(0, 5).forEach((habit) => {
+            days.forEach((day) => {
+                const shortName = day.weekday.slice(0, 2);
+                const height = Math.max(day.progress, 10);
+                const barClass = day.progress >= 80 ? "strong" : day.progress > 0 ? "" : "low";
+
                 const item = document.createElement("div");
-                item.className = "history-item";
-
+                item.className = "bar-item";
                 item.innerHTML = `
-                    <div class="history-left">
-                        <div class="status-dot">${getIcon(habit.icon)}</div>
-                        <div>
-                            <div class="habit-title">${escapeHtml(habit.title)}</div>
-                            <div class="habit-description">${escapeHtml(habit.description || "Без описания")}</div>
-                        </div>
-                    </div>
-
-                    <strong class="${habit.is_completed_today ? "green" : "orange"}">
-                        ${habit.is_completed_today ? "100%" : "0%"}
-                    </strong>
+                    <div class="bar ${barClass}" style="height: ${height}%;"></div>
+                    <span>${shortName}</span>
                 `;
 
-                topHabitsList.appendChild(item);
+                chart.appendChild(item);
             });
         }
 
@@ -2205,6 +2355,10 @@
 
                 item.className = `calendar-day-habit ${isDone ? "done" : "not-done"}`;
 
+                const actionButton = isDone
+                    ? `<span class="calendar-status done">✓ Done</span>`
+                    : `<button class="btn" type="button" onclick="completeHabitForDate(${habit.id}, '${day.date}')">✓ Выполнить</button>`;
+
                 item.innerHTML = `
                     <div class="calendar-day-habit-left">
                         <div class="calendar-day-icon">${getIcon(habit.icon)}</div>
@@ -2214,9 +2368,7 @@
                         </div>
                     </div>
 
-                    <span class="calendar-status ${isDone ? "done" : "not-done"}">
-                        ${isDone ? "✓ Done" : "○ Todo"}
-                    </span>
+                    ${actionButton}
                 `;
 
                 container.appendChild(item);
@@ -2326,8 +2478,20 @@
         }
 
         async function completeHabit(habitId) {
+            await completeHabitRequest(habitId, null);
+        }
+
+        async function completeHabitForDate(habitId, dateValue) {
+            await completeHabitRequest(habitId, dateValue);
+        }
+
+        async function completeHabitRequest(habitId, dateValue) {
             try {
-                const response = await fetch(`/api/habits/${habitId}/complete/`, {
+                const url = dateValue
+                    ? `/api/habits/${habitId}/complete/?date=${dateValue}`
+                    : `/api/habits/${habitId}/complete/`;
+
+                const response = await fetch(url, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -2339,7 +2503,12 @@
                     throw new Error(await response.text());
                 }
 
-                showToast("🐹 Отлично! Привычка выполнена.", "success");
+                showToast(
+                    dateValue
+                        ? "📅 Привычка выполнена за выбранный день."
+                        : "🐹 Отлично! Привычка выполнена.",
+                    "success"
+                );
 
                 await loadDashboard();
 
@@ -2364,11 +2533,6 @@
         async function createHabit(event) {
             event.preventDefault();
 
-            if (!currentUserId) {
-                showToast("Войдите заново.", "error");
-                return;
-            }
-
             const title = document.getElementById("createTitle").value.trim();
 
             if (!title) {
@@ -2377,7 +2541,6 @@
             }
 
             const payload = {
-                user: currentUserId,
                 title: title,
                 description: document.getElementById("createDescription").value.trim(),
                 target_type: document.getElementById("createTargetType").value,
@@ -2435,39 +2598,6 @@
             }
         }
 
-        function applyHabitFilters() {
-            const searchValue = document
-                .getElementById("habitSearchInput")
-                ?.value
-                .trim()
-                .toLowerCase() || "";
-
-            const statusFilter = document.getElementById("habitStatusFilter")?.value || "all";
-            const typeFilter = document.getElementById("habitTypeFilter")?.value || "all";
-
-            let filteredHabits = [...allHabitsCache];
-
-            if (searchValue) {
-                filteredHabits = filteredHabits.filter((habit) => {
-                    return habit.title.toLowerCase().includes(searchValue);
-                });
-            }
-
-            if (statusFilter === "done") {
-                filteredHabits = filteredHabits.filter((habit) => habit.is_completed_today);
-            }
-
-            if (statusFilter === "todo") {
-                filteredHabits = filteredHabits.filter((habit) => !habit.is_completed_today);
-            }
-
-            if (typeFilter !== "all") {
-                filteredHabits = filteredHabits.filter((habit) => habit.target_type === typeFilter);
-            }
-
-            renderHabitList("allHabitList", filteredHabits);
-        }
-
         function openEditHabitModal(habitId) {
             const habit = allHabitsCache.find((item) => item.id === habitId);
 
@@ -2493,7 +2623,7 @@
             document.getElementById("createHabitModal").style.display = "flex";
         }
 
-        async function disableHabit(habitId) {
+        function openDisableConfirm(habitId) {
             const habit = allHabitsCache.find((item) => item.id === habitId);
 
             if (!habit) {
@@ -2501,14 +2631,24 @@
                 return;
             }
 
-            const confirmed = confirm(
-                `Отключить привычку "${habit.title}"?\n\nИстория сохранится, но привычка исчезнет из активных.`
-            );
+            document.getElementById("confirmTitle").textContent = "Отключить привычку?";
+            document.getElementById("confirmText").textContent =
+                `История привычки "${habit.title}" сохранится, но она исчезнет из активных.`;
 
-            if (!confirmed) {
-                return;
-            }
+            confirmAction = async () => {
+                await disableHabit(habitId);
+            };
 
+            document.getElementById("confirmActionButton").textContent = "Отключить";
+            document.getElementById("confirmModal").style.display = "flex";
+        }
+
+        function closeConfirmModal() {
+            document.getElementById("confirmModal").style.display = "none";
+            confirmAction = null;
+        }
+
+        async function disableHabit(habitId) {
             try {
                 const response = await fetch(`/api/habits/${habitId}/`, {
                     method: "PATCH",
@@ -2525,12 +2665,35 @@
                     throw new Error(await response.text());
                 }
 
+                closeConfirmModal();
                 await loadDashboard();
 
-                showToast("Привычка отключена.", "success");
+                showToast("Привычка перемещена в архив.", "success");
             } catch (error) {
                 console.error(error);
                 showToast("Не удалось отключить привычку.", "error");
+            }
+        }
+
+        async function restoreHabit(habitId) {
+            try {
+                const response = await fetch(`/api/habits/${habitId}/restore/`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCsrfToken(),
+                    },
+                });
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                await loadDashboard();
+                showToast("Привычка восстановлена.", "success");
+            } catch (error) {
+                console.error(error);
+                showToast("Не удалось восстановить привычку.", "error");
             }
         }
 
@@ -2544,6 +2707,7 @@
             const progress = stats?.daily_progress || 0;
             const xp = profile?.xp || 0;
             const streak = profile?.current_streak || 0;
+            const level = profile?.level || 1;
 
             const achievements = [
                 {
@@ -2581,6 +2745,18 @@
                     title: "Коллекционер",
                     text: "Создать 5 привычек",
                     unlocked: habits.length >= 5,
+                },
+                {
+                    icon: "👑",
+                    title: "Уровень 5",
+                    text: "Достичь 5 уровня",
+                    unlocked: level >= 5,
+                },
+                {
+                    icon: "📅",
+                    title: "Календарист",
+                    text: "Использовать календарь для прогресса",
+                    unlocked: completedToday >= 1,
                 },
             ];
 
@@ -2822,12 +2998,25 @@
         document.addEventListener("keydown", (event) => {
             if (event.key === "Escape") {
                 closeCreateHabitModal();
+                closeConfirmModal();
             }
         });
 
         document.getElementById("createHabitModal").addEventListener("click", (event) => {
             if (event.target.id === "createHabitModal") {
                 closeCreateHabitModal();
+            }
+        });
+
+        document.getElementById("confirmModal").addEventListener("click", (event) => {
+            if (event.target.id === "confirmModal") {
+                closeConfirmModal();
+            }
+        });
+
+        document.getElementById("confirmActionButton").addEventListener("click", async () => {
+            if (confirmAction) {
+                await confirmAction();
             }
         });
 
