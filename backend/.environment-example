@@ -1,5 +1,6 @@
+USE_SQLITE=False
 DB_NAME=habithamster
 DB_USER=postgres
-DB_PASSWORD=1234567890
+DB_PASSWORD=change-me-dev-password
 DB_HOST=db
 DB_PORT=5432

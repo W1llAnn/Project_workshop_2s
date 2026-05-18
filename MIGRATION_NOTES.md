@@ -46,3 +46,35 @@ The migration is performed in a separate branch. The `main` branch is not change
 - Decide whether local developers should keep using `backend/.environment` or prefer explicit `USE_SQLITE=True` for local SQLite checks.
 - Run Docker dev/prod smoke tests in an environment with Docker available.
 - Review the large backend import, especially settings, migrations, and UI flows, before merging the pull request.
+
+## Windows local startup
+
+Run these commands from PowerShell:
+
+```powershell
+cd "D:\Магистратура_Урфу\Проектный парктикум _2\Main_repo\Git\Project_workshop_2s\backend"
+.\.venv\Scripts\Activate.ps1
+python manage.py check
+python manage.py migrate
+python manage.py seed_demo --reset --password demo-local-pass
+python manage.py runserver 127.0.0.1:8000
+```
+
+Open http://127.0.0.1:8000/.
+
+Demo login after the command above: `demo` / `demo-local-pass`.
+
+For later runs:
+
+```powershell
+cd "D:\Магистратура_Урфу\Проектный парктикум _2\Main_repo\Git\Project_workshop_2s\backend"
+.\.venv\Scripts\Activate.ps1
+python manage.py runserver 127.0.0.1:8000
+```
+
+If `OperationalError: no such table: auth_user` appears, stop the server with
+`Ctrl+C`, run `python manage.py migrate`, and start the server again.
+
+On Windows local startup, SQLite is now the default database backend. Docker
+development and production still opt into PostgreSQL explicitly with
+`USE_SQLITE=False`.

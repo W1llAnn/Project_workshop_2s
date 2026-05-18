@@ -33,3 +33,5 @@ Thumbs.db
 *.rar
 
 data/
+db.sqlite3
+backend/db.sqlite3
