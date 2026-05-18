@@ -21,6 +21,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env(
     DEBUG=(bool, True),
     SECRET_KEY=(str, 'django-insecure-change-me-for-local-development-only'),
+    # Local defaults are preview-friendly. For production/demo hardening, set
+    # exact ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS through environment vars.
     ALLOWED_HOSTS=(list, ['localhost', '127.0.0.1', '.ngrok-free.app', '.trycloudflare.com', '.loca.lt', '.localhost.run', '.lhr.life', '.serveo.net']),
     CSRF_TRUSTED_ORIGINS=(list, ['http://localhost:8000', 'http://127.0.0.1:8000', 'https://*.ngrok-free.app', 'https://*.trycloudflare.com', 'https://*.loca.lt', 'https://*.localhost.run', 'https://*.lhr.life', 'https://*.serveo.net']),
     USE_SQLITE=(bool, True),

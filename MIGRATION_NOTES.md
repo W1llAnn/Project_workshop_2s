@@ -108,9 +108,8 @@ First PowerShell:
 
 ```powershell
 cd "D:\Магистратура_Урфу\Проектный парктикум _2\Main_repo\Git\Project_workshop_2s\backend"
-.\.venv\Scripts\Activate.ps1
-python manage.py migrate
-python manage.py runserver 127.0.0.1:8000
+.\.venv\Scripts\python.exe manage.py migrate
+.\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000
 ```
 
 Second PowerShell:
@@ -122,6 +121,20 @@ cloudflared tunnel --url http://127.0.0.1:8000
 
 Copy the `https://...trycloudflare.com` URL.
 
+If the public link stops opening, the temporary tunnel has expired or the
+terminal was closed. Stop/restart `cloudflared tunnel --url http://127.0.0.1:8000`
+and share the new `https://...trycloudflare.com` URL.
+
+For a safer public preview, set environment variables before starting Django:
+
+```powershell
+$env:DEBUG="False"
+$env:SECRET_KEY="replace-with-a-long-random-preview-key"
+$env:ALLOWED_HOSTS="127.0.0.1,localhost,.trycloudflare.com"
+$env:CSRF_TRUSTED_ORIGINS="http://127.0.0.1:8000,https://*.trycloudflare.com"
+.\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000
+```
+
 Other fallbacks:
 
 ```powershell
@@ -132,3 +145,19 @@ ssh -R 80:localhost:8000 serveo.net
 
 Django preview settings allow localhost, ngrok, Cloudflare Tunnel, localtunnel,
 localhost.run, and Serveo hosts.
+
+## Developer checks
+
+Install development dependencies before running tests:
+
+```powershell
+cd "D:\Магистратура_Урфу\Проектный парктикум _2\Main_repo\Git\Project_workshop_2s\backend"
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.\.venv\Scripts\python.exe manage.py test habits
+```
+
+## Remaining QA TODOs
+
+- Keep the add-habit form data in the modal when validation fails.
+- Add a real profile/settings page, or remove UI expectations around account settings.
+- Review `DEBUG=False` static/media behavior before a longer public demo.
