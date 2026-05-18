@@ -292,10 +292,10 @@
       <i class="fas fa-chart-line"></i>
       <span class="text-xs">Статистика</span>
     </a>
-    <a href="#" onclick="document.querySelector('[data-modal=add]')?.classList.add('open');return false;" class="flex flex-col items-center gap-1 text-gray-500">
+    <button type="button" onclick="document.querySelector('[data-modal=add]')?.classList.add('open')" class="flex flex-col items-center gap-1 text-gray-500">
       <i class="fas fa-plus-circle"></i>
       <span class="text-xs">Добавить</span>
-    </a>
+    </button>
     <a href="{% url 'habit_archive' %}" class="flex flex-col items-center gap-1 {% if request.resolver_match.url_name == 'habit_archive' %}text-green-600{% else %}text-gray-500{% endif %}">
       <i class="fas fa-box-archive"></i>
       <span class="text-xs">Архив</span>

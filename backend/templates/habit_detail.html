@@ -287,7 +287,7 @@
 
 <div class="flex flex-wrap justify-end items-center gap-2 mt-6">
   {% if habit.is_active %}
-    <form method="post" action="{% url 'habit_delete' habit.id %}" onsubmit="return confirm('Архивировать привычку?')">
+    <form method="post" action="{% url 'habit_delete' habit.id %}" onsubmit="return confirm('Архивировать «{{ habit.title|escapejs }}»? Привычка исчезнет с дашборда, но история сохранится.')">
       {% csrf_token %}
       <input type="hidden" name="next" value="{{ request.path }}">
       <button class="px-4 py-2 text-sm text-amber-700 hover:bg-amber-50 rounded-lg flex items-center gap-2">
@@ -304,7 +304,7 @@
     </form>
   {% endif %}
   <form method="post" action="{% url 'habit_destroy' habit.id %}"
-        onsubmit="return confirm('Удалить «{{ habit.title|escapejs }}» вместе со всей историей? Действие нельзя отменить.')">
+        onsubmit="return confirm('Безвозвратно удалить «{{ habit.title|escapejs }}» вместе со всей историей выполнений? Это действие нельзя отменить.')">
     {% csrf_token %}
     <button class="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2">
       <i class="fas fa-trash"></i> Удалить безвозвратно
