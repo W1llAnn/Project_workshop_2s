@@ -98,3 +98,37 @@ ngrok http 8000
 
 Open the `https://...ngrok-free.app` URL shown by ngrok. Local hosts and
 `*.ngrok-free.app` are allowed in Django settings for preview use.
+
+## Public tunnel alternatives
+
+If ngrok fails with auth/connect errors, try Cloudflare Tunnel first. It usually
+does not require login for a temporary preview URL.
+
+First PowerShell:
+
+```powershell
+cd "D:\Магистратура_Урфу\Проектный парктикум _2\Main_repo\Git\Project_workshop_2s\backend"
+.\.venv\Scripts\Activate.ps1
+python manage.py migrate
+python manage.py runserver 127.0.0.1:8000
+```
+
+Second PowerShell:
+
+```powershell
+winget install --id Cloudflare.cloudflared
+cloudflared tunnel --url http://127.0.0.1:8000
+```
+
+Copy the `https://...trycloudflare.com` URL.
+
+Other fallbacks:
+
+```powershell
+npx localtunnel --port 8000
+ssh -R 80:localhost:8000 nokey@localhost.run
+ssh -R 80:localhost:8000 serveo.net
+```
+
+Django preview settings allow localhost, ngrok, Cloudflare Tunnel, localtunnel,
+localhost.run, and Serveo hosts.
