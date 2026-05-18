@@ -13,6 +13,7 @@ from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
+from django.utils.crypto import get_random_string
 from django.utils import timezone
 
 from habits.models import Habit, HabitLog, HabitSchedule, Tag
@@ -105,7 +106,7 @@ class Command(BaseCommand):
         password = (
             options['password']
             or os.environ.get('DEMO_USER_PASSWORD')
-            or User.objects.make_random_password()
+            or get_random_string(24)
         )
         days = options['days']
 
