@@ -78,3 +78,23 @@ If `OperationalError: no such table: auth_user` appears, stop the server with
 On Windows local startup, SQLite is now the default database backend. Docker
 development and production still opt into PostgreSQL explicitly with
 `USE_SQLITE=False`.
+
+## Public preview with ngrok
+
+Start Django locally:
+
+```powershell
+cd "D:\Магистратура_Урфу\Проектный парктикум _2\Main_repo\Git\Project_workshop_2s\backend"
+.\.venv\Scripts\Activate.ps1
+python manage.py migrate
+python manage.py runserver 127.0.0.1:8000
+```
+
+In another PowerShell window, expose it:
+
+```powershell
+ngrok http 8000
+```
+
+Open the `https://...ngrok-free.app` URL shown by ngrok. Local hosts and
+`*.ngrok-free.app` are allowed in Django settings for preview use.
