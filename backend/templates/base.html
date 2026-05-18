@@ -1,0 +1,408 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}HabitHamster{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'img/hamster_favicon.svg' %}">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Rubik:wght@500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#4CAF50',
+            secondary: '#81C784',
+            accent: '#FF9800',
+            background: '#FAF8F5',
+            surface: '#FFFFFF',
+            text: '#2E3333',
+            muted: '#6B7280',
+          },
+          fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Rubik', 'sans-serif'] },
+        }
+      }
+    }
+  </script>
+  <style>
+    /* ----- base ----- */
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; background: #FAF8F5; color: #2E3333; }
+
+    /* ----- glass card with smooth hover lift ----- */
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      transition: transform .25s ease, box-shadow .25s ease;
+    }
+    a.glass-card:hover, .glass-card.lift:hover, .habit-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(76, 175, 80, .12);
+    }
+
+    /* ----- sidebar links / buttons ----- */
+    .nav-link { transition: background .2s ease, color .2s ease, transform .2s ease; }
+    .nav-link:hover { background: rgba(76, 175, 80, .1); transform: translateX(2px); }
+    .nav-link.active { background: rgba(76, 175, 80, .15); color: #4CAF50; font-weight: 600; }
+
+    /* ----- generic interactive button feel ----- */
+    button, .btn-press { transition: transform .15s ease, box-shadow .2s ease, background-color .2s ease; }
+    button:not(:disabled):hover, .btn-press:hover { transform: translateY(-1px); }
+    button:not(:disabled):active, .btn-press:active { transform: translateY(0) scale(.97); }
+
+    /* ----- heatmap ----- */
+    .heatmap-cell { width: 14px; height: 14px; border-radius: 3px; display: inline-block; transition: transform .15s ease; }
+    .heatmap-cell:hover { transform: scale(1.25); }
+    .heatmap-0 { background: #ECEFF1; }
+    .heatmap-1 { background: #C8E6C9; }
+    .heatmap-2 { background: #81C784; }
+    .heatmap-3 { background: #4CAF50; }
+
+    /* ----- modal anim ----- */
+    [data-modal] { display: none; opacity: 0; transition: opacity .25s ease; }
+    [data-modal].open { display: flex; opacity: 1; }
+    [data-modal] > div { transform: translateY(12px) scale(.97); opacity: 0; transition: transform .3s cubic-bezier(.22,1,.36,1), opacity .25s ease; }
+    [data-modal].open > div { transform: translateY(0) scale(1); opacity: 1; }
+
+    /* ----- progress bar shine + width animation ----- */
+    .progress-fill { transition: width 1s cubic-bezier(.22,1,.36,1); }
+    .progress-shine {
+      position: relative; overflow: hidden;
+    }
+    .progress-shine::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.45) 50%, transparent 70%);
+      transform: translateX(-100%);
+      animation: progress-shine 2.4s ease-in-out infinite;
+    }
+    @keyframes progress-shine {
+      0%   { transform: translateX(-100%); }
+      60%  { transform: translateX(100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    /* ----- intensity bars: grow from 0 ----- */
+    .intensity-bar { transition: height .9s cubic-bezier(.22,1,.36,1); }
+
+    /* ----- enter transitions ----- */
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fade-in {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes pop-in {
+      0%   { opacity: 0; transform: scale(.9); }
+      60%  { opacity: 1; transform: scale(1.04); }
+      100% { transform: scale(1); }
+    }
+    .anim-fade-up { animation: fade-up .5s cubic-bezier(.22,1,.36,1) both; }
+    .anim-fade-in { animation: fade-in .4s ease both; }
+    .anim-pop     { animation: pop-in .45s cubic-bezier(.22,1,.36,1) both; }
+    /* stagger helpers — apply to a parent and use .anim-fade-up on children */
+    .stagger > * { animation: fade-up .5s cubic-bezier(.22,1,.36,1) both; }
+    .stagger > *:nth-child(1) { animation-delay: .03s; }
+    .stagger > *:nth-child(2) { animation-delay: .08s; }
+    .stagger > *:nth-child(3) { animation-delay: .14s; }
+    .stagger > *:nth-child(4) { animation-delay: .20s; }
+    .stagger > *:nth-child(5) { animation-delay: .26s; }
+    .stagger > *:nth-child(6) { animation-delay: .32s; }
+    .stagger > *:nth-child(7) { animation-delay: .38s; }
+    .stagger > *:nth-child(8) { animation-delay: .44s; }
+    .stagger > *:nth-child(n+9) { animation-delay: .5s; }
+
+    /* ----- toasts ----- */
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateX(20px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    .toast { animation: toast-in .35s cubic-bezier(.22,1,.36,1) both; }
+
+    /* ----- mascot subtle bob ----- */
+    @keyframes mascot-bob {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-4px); }
+    }
+    .mascot-bob { animation: mascot-bob 4s ease-in-out infinite; }
+
+    /* ----- form focus glow ----- */
+    input:focus, select:focus, textarea:focus { outline: none; box-shadow: 0 0 0 3px rgba(76,175,80,.18); }
+    input, select, textarea { transition: box-shadow .2s ease, border-color .2s ease; }
+
+    /* ----- streak fire pulse ----- */
+    @keyframes streak-pulse {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.12); filter: drop-shadow(0 0 4px rgba(251,140,0,.55)); }
+    }
+    .streak-pulse { animation: streak-pulse 2.4s ease-in-out infinite; transform-origin: center; }
+
+    /* ----- peak chart bar (continuous soft pulse + glow) ----- */
+    @keyframes peak-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,.45); transform: translateY(0); }
+      50%      { box-shadow: 0 0 0 6px rgba(34,197,94,0);  transform: translateY(-1px); }
+    }
+    .peak-pulse { animation: peak-pulse 2.2s ease-in-out infinite; }
+
+    /* ----- chart bars: smooth grow from 0 (paired with data-bar-height JS) ----- */
+    .bar-grow { height: 0%; transition: height .9s cubic-bezier(.22,1,.36,1); }
+
+    /* ----- generic icon wiggle on hover ----- */
+    @keyframes icon-wiggle {
+      0%, 100% { transform: rotate(0); }
+      25%      { transform: rotate(-8deg); }
+      75%      { transform: rotate(8deg); }
+    }
+    .wiggle-hover:hover .wiggle-target,
+    .wiggle-hover:hover { animation: icon-wiggle .6s ease-in-out; }
+
+    /* ----- soft floating accent (mascot vibe icons, achievement halos) ----- */
+    @keyframes soft-float {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-3px); }
+    }
+    .soft-float { animation: soft-float 3.2s ease-in-out infinite; }
+
+    /* ----- shimmer overlay for hero gradients ----- */
+    @keyframes hero-shimmer {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+    .hero-shimmer { position: relative; overflow: hidden; }
+    .hero-shimmer::before {
+      content: '';
+      position: absolute; top: 0; left: 0; width: 50%; height: 100%;
+      background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.18) 50%, transparent 100%);
+      animation: hero-shimmer 7s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    /* ----- correlation card sweep ----- */
+    .corr-sweep {
+      background-size: 200% 100%;
+      background-position: 0% 0%;
+      animation: hero-shimmer 12s ease-in-out infinite;
+    }
+
+    /* ----- soft inner highlight for hour-of-day chart bars ----- */
+    .chart-bar-fancy {
+      background-image: linear-gradient(180deg, rgba(255,255,255,.35) 0%, rgba(255,255,255,0) 38%);
+      box-shadow: inset 0 -2px 0 rgba(0,0,0,.05);
+    }
+
+    /* ----- respect reduced motion ----- */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .001ms !important;
+        transition-duration: .001ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="min-h-screen pb-24 md:pb-0">
+
+{% if user.is_authenticated %}
+<aside class="fixed top-0 left-0 bottom-0 w-64 bg-white border-r border-gray-200 hidden md:flex flex-col p-6 z-30">
+  <a href="{% url 'dashboard' %}" class="flex items-center gap-2 mb-8">
+    <img src="{% static 'img/hamster_logoNoText.svg' %}" class="w-10 h-10" alt="HabitHamster">
+    <div>
+      <div class="font-display font-bold text-green-600 text-lg leading-tight">HabitHamster</div>
+      <div class="text-xs text-gray-500">Уровень {{ profile.level }} • Мастер привычек</div>
+    </div>
+  </a>
+  <nav class="flex flex-col gap-1 text-sm">
+    <a href="{% url 'dashboard' %}" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+      <i class="fas fa-th-large w-5"></i> Дашборд
+    </a>
+    <a href="{% url 'calendar' %}" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg {% if request.resolver_match.url_name == 'calendar' %}active{% else %}text-gray-600{% endif %}">
+      <i class="fas fa-calendar w-5"></i> Календарь
+    </a>
+    <a href="{% url 'analytics' %}" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg {% if request.resolver_match.url_name == 'analytics' %}active{% endif %}">
+      <i class="fas fa-chart-line w-5"></i> Аналитика
+    </a>
+    <a href="{% url 'habit_archive' %}" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg {% if request.resolver_match.url_name == 'habit_archive' %}active{% else %}text-gray-600{% endif %}">
+      <i class="fas fa-box-archive w-5"></i> Архив
+    </a>
+    {% if user.is_staff %}
+    <a href="/admin/" class="nav-link flex items-center gap-3 px-3 py-2 rounded-lg text-gray-600">
+      <i class="fas fa-cog w-5"></i> Админка
+    </a>
+    {% endif %}
+  </nav>
+  <button onclick="document.querySelector('[data-modal=add]')?.classList.add('open')"
+          class="mt-4 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-semibold shadow-sm">
+    <i class="fas fa-plus"></i> Новая привычка
+  </button>
+  <div class="mt-auto pt-6 border-t border-gray-100 flex items-center gap-3">
+    <img src="{% static 'img/mascot.png' %}" class="w-10 h-10 rounded-full" alt="Mascot">
+    <div class="flex-1 min-w-0">
+      <div class="text-sm font-semibold truncate">{{ user.username }}</div>
+      <div class="text-xs text-gray-500 truncate">{{ profile.xp }} / {{ profile.xp_for_next_level }} XP</div>
+    </div>
+    <form method="post" action="{% url 'logout' %}">{% csrf_token %}
+      <button class="text-gray-400 hover:text-red-500" title="Выйти"><i class="fas fa-sign-out-alt"></i></button>
+    </form>
+  </div>
+</aside>
+
+<div class="md:pl-64 min-h-screen">
+{% else %}
+<div class="min-h-screen">
+{% endif %}
+
+  {% if messages %}
+    <div id="toast-stack" class="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
+      {% for message in messages %}
+        <div class="toast flex items-start gap-3 pl-4 pr-2 py-3 rounded-xl shadow-lg text-sm transition-all duration-300 {% if message.level_tag == 'error' %}bg-red-100 text-red-800{% else %}bg-green-100 text-green-800{% endif %}"
+             data-extra="{{ message.extra_tags }}">
+          <span class="flex-1 leading-snug">{{ message }}</span>
+          <span class="toast-action"></span>
+          <button type="button" class="toast-close opacity-50 hover:opacity-100 w-6 h-6 rounded flex items-center justify-center" aria-label="Закрыть">
+            <i class="fas fa-times text-xs"></i>
+          </button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <main class="max-w-6xl mx-auto px-4 md:px-8 py-6">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+{% if user.is_authenticated %}
+{% include "includes/add_habit_modal.html" %}
+<footer class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 py-2 md:hidden z-30">
+  <div class="max-w-7xl mx-auto px-4 flex justify-around">
+    <a href="{% url 'dashboard' %}" class="flex flex-col items-center gap-1 {% if request.resolver_match.url_name == 'dashboard' %}text-green-600{% else %}text-gray-500{% endif %}">
+      <i class="fas fa-th-large"></i>
+      <span class="text-xs">Дашборд</span>
+    </a>
+    <a href="{% url 'analytics' %}" class="flex flex-col items-center gap-1 {% if request.resolver_match.url_name == 'analytics' %}text-green-600{% else %}text-gray-500{% endif %}">
+      <i class="fas fa-chart-line"></i>
+      <span class="text-xs">Статистика</span>
+    </a>
+    <a href="#" onclick="document.querySelector('[data-modal=add]')?.classList.add('open');return false;" class="flex flex-col items-center gap-1 text-gray-500">
+      <i class="fas fa-plus-circle"></i>
+      <span class="text-xs">Добавить</span>
+    </a>
+    <a href="{% url 'habit_archive' %}" class="flex flex-col items-center gap-1 {% if request.resolver_match.url_name == 'habit_archive' %}text-green-600{% else %}text-gray-500{% endif %}">
+      <i class="fas fa-box-archive"></i>
+      <span class="text-xs">Архив</span>
+    </a>
+  </div>
+</footer>
+{% endif %}
+
+<script>
+  // CSRF helper for inline JS-built forms (toast undo, calendar quick-create).
+  window.__csrfToken = "{{ csrf_token }}";
+
+  // Close any data-modal on backdrop-click or Escape, with the CSS transition baked in.
+  document.addEventListener('click', (e) => {
+    if (e.target && e.target.matches && e.target.matches('[data-modal]')) {
+      e.target.classList.remove('open');
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('[data-modal].open').forEach(m => m.classList.remove('open'));
+    }
+  });
+  // Animate progress bars: read data-target-width and animate width from 0 once visible.
+  window.addEventListener('load', () => {
+    document.querySelectorAll('[data-progress]').forEach(el => {
+      const target = el.getAttribute('data-progress') || '0';
+      requestAnimationFrame(() => { el.style.width = target + '%'; });
+    });
+    document.querySelectorAll('[data-bar-height]').forEach(el => {
+      const h = el.getAttribute('data-bar-height') || '0';
+      requestAnimationFrame(() => { el.style.height = h + '%'; });
+    });
+
+    // Count-up animation for numeric stat cards.
+    // Add data-count-to="N" (optionally data-count-suffix="%") on any element.
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const formatNum = (n, decimals) => decimals > 0 ? n.toFixed(decimals) : Math.round(n).toString();
+    document.querySelectorAll('[data-count-to]').forEach(el => {
+      const target = parseFloat(el.getAttribute('data-count-to')) || 0;
+      const suffix = el.getAttribute('data-count-suffix') || '';
+      const decimals = parseInt(el.getAttribute('data-count-decimals') || '0', 10);
+      if (prefersReduced || target === 0) {
+        el.textContent = formatNum(target, decimals) + suffix;
+        return;
+      }
+      const duration = Math.min(1200, 400 + target * 12); // longer for bigger numbers
+      const start = performance.now();
+      const tick = (now) => {
+        const t = Math.min(1, (now - start) / duration);
+        // ease-out-cubic
+        const eased = 1 - Math.pow(1 - t, 3);
+        el.textContent = formatNum(target * eased, decimals) + suffix;
+        if (t < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+  });
+
+  // ----- Toasts: render undo button from message.extra_tags JSON, auto-dismiss -----
+  (function () {
+    const stack = document.getElementById('toast-stack');
+    if (!stack) return;
+    const dismiss = (toast) => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(10px)';
+      setTimeout(() => toast.remove(), 300);
+    };
+    stack.querySelectorAll('.toast').forEach(toast => {
+      const closeBtn = toast.querySelector('.toast-close');
+      if (closeBtn) closeBtn.addEventListener('click', () => dismiss(toast));
+
+      const raw = toast.getAttribute('data-extra') || '';
+      const slot = toast.querySelector('.toast-action');
+      if (raw && slot) {
+        try {
+          const meta = JSON.parse(raw);
+          if (meta && meta.undo) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = meta.undo;
+            form.className = 'inline-flex';
+            const csrf = document.createElement('input');
+            csrf.type = 'hidden';
+            csrf.name = 'csrfmiddlewaretoken';
+            csrf.value = window.__csrfToken || '';
+            form.appendChild(csrf);
+            const nxt = document.createElement('input');
+            nxt.type = 'hidden';
+            nxt.name = 'next';
+            nxt.value = window.location.pathname + window.location.search;
+            form.appendChild(nxt);
+            const btn = document.createElement('button');
+            btn.type = 'submit';
+            btn.className = 'px-2 py-1 text-xs font-semibold underline hover:no-underline';
+            btn.textContent = meta.label || 'Отменить';
+            form.appendChild(btn);
+            slot.appendChild(form);
+          }
+        } catch (_) { /* not JSON, ignore */ }
+      }
+      // Auto-dismiss: longer when the toast has an actionable undo button.
+      const hasUndo = !!toast.querySelector('.toast-action form');
+      setTimeout(() => dismiss(toast), hasUndo ? 8000 : 5000);
+    });
+  })();
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>
