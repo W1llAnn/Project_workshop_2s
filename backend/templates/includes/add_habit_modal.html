@@ -41,12 +41,12 @@
 
       <div>
         <label class="block text-sm font-semibold text-gray-700 mb-2">Частота</label>
-        <div class="flex gap-2 flex-wrap" id="frequency-picker">
+        <div class="grid grid-cols-3 gap-2" id="frequency-picker">
           {% for v, label in add_form.fields.frequency_type.choices %}
-            <label class="cursor-pointer flex-1 min-w-[120px]">
+            <label class="cursor-pointer min-w-0">
               <input type="radio" name="frequency_type" value="{{ v }}" {% if forloop.first %}checked{% endif %} class="sr-only peer">
-              <div class="w-full px-4 py-3 rounded-xl text-center font-semibold border border-gray-200 bg-white text-gray-700 peer-checked:bg-green-500 peer-checked:text-white peer-checked:border-green-500 transition">
-                {{ label }}
+              <div class="min-h-[64px] w-full px-3 py-2 rounded-xl text-center font-semibold border border-gray-200 bg-white text-gray-700 peer-checked:bg-green-500 peer-checked:text-white peer-checked:border-green-500 transition flex items-center justify-center leading-tight">
+                {% if v == 'custom' %}Сегодня{% elif v == 'weekly' %}По дням<br>недели{% else %}{{ label }}{% endif %}
               </div>
             </label>
           {% endfor %}

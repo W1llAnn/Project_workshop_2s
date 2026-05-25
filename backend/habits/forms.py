@@ -1,7 +1,10 @@
 """Forms for the HTML pages."""
+from datetime import timedelta
+
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.utils import timezone
 
 from habits.models import Habit, HabitSchedule, Tag
 
@@ -42,6 +45,11 @@ class LoginForm(AuthenticationForm):
 
 
 FREQUENCY_CHOICES = HabitSchedule.FREQUENCY_CHOICES
+
+
+def _week_bounds(anchor):
+    monday = anchor - timedelta(days=anchor.isoweekday() - 1)
+    return monday, monday + timedelta(days=6)
 
 
 class HabitForm(forms.ModelForm):
@@ -102,6 +110,13 @@ class HabitForm(forms.ModelForm):
         sched.reminder_time = self.cleaned_data.get('reminder_time') or None
         sched.window_start = self.cleaned_data.get('window_start') or None
         sched.window_end = self.cleaned_data.get('window_end') or None
+        today = timezone.localdate()
+        if sched.frequency_type == 'custom':
+            sched.start_date = today
+            sched.end_date = today
+            sched.days_of_week = str(today.isoweekday())
+        else:
+            sched.start_date, sched.end_date = _week_bounds(today)
         sched.save()
         # Tags by name (find or create).
         names_raw = self.cleaned_data.get('tag_names', '') or ''

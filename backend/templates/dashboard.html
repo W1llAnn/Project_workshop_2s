@@ -16,7 +16,50 @@
     <div class="hidden md:block w-40 h-2 bg-gray-200 rounded-full overflow-hidden">
       <div class="h-full bg-green-500 progress-fill progress-shine" style="width: 0%" data-progress="{{ profile.level_progress_pct }}"></div>
     </div>
-    <button class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200" title="Уведомления"><i class="fas fa-bell text-gray-600"></i></button>
+    <div class="relative" data-notifications>
+      <button type="button" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200" title="Уведомления" data-notifications-toggle aria-expanded="false">
+        <i class="fas fa-bell text-gray-600"></i>
+      </button>
+      <div class="hidden absolute right-0 top-12 w-80 max-w-[calc(100vw-2rem)] glass-card p-4 z-40 text-left" data-notifications-menu>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-bold">Уведомления</h3>
+          <span class="text-[10px] uppercase text-gray-400 font-semibold">сегодня</span>
+        </div>
+        {% if due_today or insights %}
+          <div class="space-y-2">
+            {% if due_today %}
+              <div class="flex gap-3 rounded-xl bg-green-50 p-3 text-sm">
+                <i class="fas fa-calendar-check text-green-600 mt-0.5"></i>
+                <div>
+                  <div class="font-semibold text-gray-800">Сегодня у тебя запланированы привычки</div>
+                  <div class="text-xs text-gray-500 mt-0.5">{{ done_today }} из {{ due_today }} уже отмечено.</div>
+                </div>
+              </div>
+              <div class="flex gap-3 rounded-xl bg-orange-50 p-3 text-sm">
+                <i class="fas fa-bell text-orange-600 mt-0.5"></i>
+                <div>
+                  <div class="font-semibold text-gray-800">Не забудь отметить прогресс</div>
+                  <div class="text-xs text-gray-500 mt-0.5">Даже частичное выполнение сохраняет темп.</div>
+                </div>
+              </div>
+            {% endif %}
+            {% if insights %}
+              <a href="{% url 'analytics' %}" class="flex gap-3 rounded-xl bg-blue-50 p-3 text-sm hover:bg-blue-100 transition">
+                <i class="fas fa-lightbulb text-blue-600 mt-0.5"></i>
+                <div>
+                  <div class="font-semibold text-gray-800">Инсайты обновлены в аналитике</div>
+                  <div class="text-xs text-gray-500 mt-0.5">Открой аналитику, чтобы увидеть свежие подсказки.</div>
+                </div>
+              </a>
+            {% endif %}
+          </div>
+        {% else %}
+          <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-center text-sm text-gray-500">
+            Пока нет новых уведомлений
+          </div>
+        {% endif %}
+      </div>
+    </div>
     <button onclick="document.querySelector('[data-modal=add]').classList.add('open')" class="px-4 py-2 bg-green-500 text-white rounded-xl font-semibold hover:bg-green-600 flex items-center gap-2">
       <i class="fas fa-plus"></i> Новая привычка
     </button>
@@ -81,7 +124,7 @@
             <div class="text-xs text-gray-500 mt-0.5 truncate">
               {% if item.habit.target_type == 'minutes' %}{{ item.habit.target_value }} мин •{% endif %}
               {{ item.habit.get_target_unit_display }}
-              {% if item.habit.schedule %} • {{ item.habit.schedule.get_frequency_type_display }}{% endif %}
+              {% if item.habit.schedule %} • {% if item.habit.schedule.frequency_type == 'custom' %}Сегодня{% else %}{{ item.habit.schedule.get_frequency_type_display }}{% endif %}{% endif %}
               {% if item.habit.schedule.has_window %}
                 • {{ item.habit.schedule.window_start|time:"H:i" }}–{{ item.habit.schedule.window_end|time:"H:i" }}
               {% endif %}
@@ -266,6 +309,34 @@
   </aside>
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    const root = document.querySelector('[data-notifications]');
+    if (!root) return;
+    const toggle = root.querySelector('[data-notifications-toggle]');
+    const menu = root.querySelector('[data-notifications-menu]');
+    if (!toggle || !menu) return;
+    const close = () => {
+      menu.classList.add('hidden');
+      toggle.setAttribute('aria-expanded', 'false');
+    };
+    toggle.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const isHidden = menu.classList.contains('hidden');
+      menu.classList.toggle('hidden', !isHidden);
+      toggle.setAttribute('aria-expanded', String(isHidden));
+    });
+    document.addEventListener('click', (event) => {
+      if (!root.contains(event.target)) close();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') close();
+    });
+  })();
+</script>
 {% endblock %}
 
 

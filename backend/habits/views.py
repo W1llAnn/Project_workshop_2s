@@ -225,8 +225,6 @@ def calendar_view(request):
     view_mode = request.GET.get('view', 'week')
     if view_mode not in {'day', 'week', 'month'}:
         view_mode = 'week'
-    _, recurring_horizon_end = _week_bounds(today)
-
     habits = list(
         Habit.objects.filter(user=request.user, is_active=True).select_related('schedule').prefetch_related('tags')
     )
@@ -260,9 +258,17 @@ def calendar_view(request):
     def _pill_for(habit: Habit, day: date) -> dict | None:
         schedule = getattr(habit, 'schedule', None)
         # Avoid projecting open-ended recurring habits indefinitely into
-        # future months. The calendar remains focused on the current week
-        # unless a schedule has an explicit end date.
-        if (schedule is None or schedule.end_date is None) and day > recurring_horizon_end:
+        # future months. Existing unbounded schedules fall back to their
+        # start-date week; new schedules save explicit start/end bounds.
+        if schedule is None:
+            _, display_end = _week_bounds(getattr(habit, 'created_at', timezone.now()).date())
+            if day > display_end:
+                return None
+        elif schedule.end_date is None:
+            _, display_end = _week_bounds(schedule.start_date)
+            if day > display_end:
+                return None
+        if schedule and schedule.start_date and day < schedule.start_date:
             return None
         if schedule and not schedule.is_due_on(day):
             return None
@@ -400,28 +406,49 @@ def habit_schedule_move(request, habit_id: int):
         target_date = datetime.strptime(payload.get('date', ''), '%Y-%m-%d').date()
         source_raw = payload.get('source_date')
         source_date = datetime.strptime(source_raw, '%Y-%m-%d').date() if source_raw else target_date
-        hour = int(payload.get('hour'))
+        hour_raw = payload.get('hour')
+        hour = int(hour_raw) if hour_raw not in (None, '') else None
     except (TypeError, ValueError, json.JSONDecodeError):
         return JsonResponse({'detail': 'Некорректная дата или время.'}, status=400)
-    if hour < _CALENDAR_HOUR_RANGE[0] or hour > _CALENDAR_HOUR_RANGE[-1]:
+    if hour is not None and (hour < _CALENDAR_HOUR_RANGE[0] or hour > _CALENDAR_HOUR_RANGE[-1]):
         return JsonResponse({'detail': 'Время вне диапазона календаря.'}, status=400)
 
     schedule, _ = HabitSchedule.objects.get_or_create(habit=habit)
-    target_time = time(hour=hour)
-    end_hour = min(hour + 1, 23)
-    schedule.window_start = target_time
-    schedule.window_end = time(hour=end_hour)
-    schedule.reminder_time = target_time
-    if schedule.frequency_type != 'daily' or source_date.isoweekday() != target_date.isoweekday():
+    if hour is not None:
+        target_time = time(hour=hour)
+        end_hour = min(hour + 1, 23)
+        schedule.window_start = target_time
+        schedule.window_end = time(hour=end_hour)
+        schedule.reminder_time = target_time
+    if hour is None and schedule.frequency_type == 'weekly':
+        schedule.days_of_week = str(target_date.isoweekday())
+        schedule.start_date, schedule.end_date = _week_bounds(target_date)
+    elif hour is None or schedule.frequency_type == 'custom':
+        schedule.frequency_type = 'custom'
+        schedule.days_of_week = str(target_date.isoweekday())
+        schedule.start_date = target_date
+        schedule.end_date = target_date
+    elif schedule.frequency_type != 'daily' or source_date.isoweekday() != target_date.isoweekday():
         schedule.frequency_type = 'weekly'
         schedule.days_of_week = str(target_date.isoweekday())
-    schedule.save(update_fields=['frequency_type', 'days_of_week', 'window_start', 'window_end', 'reminder_time'])
+        schedule.start_date, schedule.end_date = _week_bounds(target_date)
+    else:
+        schedule.start_date, schedule.end_date = _week_bounds(target_date)
+    schedule.save(update_fields=[
+        'frequency_type',
+        'days_of_week',
+        'start_date',
+        'end_date',
+        'window_start',
+        'window_end',
+        'reminder_time',
+    ])
     return JsonResponse({
         'detail': 'ok',
         'habit_id': habit.id,
         'date': target_date.isoformat(),
         'hour': hour,
-        'time_label': f'{hour:02d}:00',
+        'time_label': f'{hour:02d}:00' if hour is not None else '',
         'frequency_type': schedule.frequency_type,
         'days_of_week': schedule.days_of_week,
     })
