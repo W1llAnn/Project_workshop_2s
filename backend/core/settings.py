@@ -11,6 +11,7 @@ The flag ``USE_SQLITE`` (env or default ``True`` when no ``DB_NAME`` env var)
 selects the engine.
 """
 
+import os
 from pathlib import Path
 
 import environ
@@ -61,6 +62,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'core.middleware.BlobDBSyncMiddleware',
     'django.middleware.security.SecurityMiddleware',
     # Serve collected /static/ files via WSGI. In DEBUG mode WhiteNoise no-ops
     # (Django's runserver serves them); in production (Docker behind nginx)
