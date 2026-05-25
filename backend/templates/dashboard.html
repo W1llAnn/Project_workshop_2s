@@ -85,7 +85,7 @@
           </span>
         </div>
       </div>
-      <img src="{% static 'img/mascot.png' %}" class="w-28 h-28 hidden sm:block self-end -mr-2 -mb-2 mascot-bob" alt="">
+      <img src="{% static 'img/mascot_alt.png' %}" class="mascot-img w-28 h-28 hidden sm:block self-end -mr-2 -mb-2 mascot-bob" alt="">
     </div>
   </div>
   <div class="glass-card p-6 flex flex-col justify-center text-center">
@@ -221,7 +221,7 @@
       </div>
     {% empty %}
       <div class="glass-card p-8 text-center anim-pop">
-        <img src="{% static 'img/mascot_alt.png' %}" class="w-24 h-24 mx-auto opacity-90 mascot-bob" alt="">
+        <img src="{% static 'img/mascot_alt.png' %}" class="mascot-img w-24 h-24 mx-auto opacity-95 mascot-bob" alt="">
         <h3 class="font-bold text-lg mt-4">На этот день привычек нет</h3>
         <p class="text-sm text-gray-500 mt-1">Выбери другую дату или создай привычку для этого дня.</p>
         <button onclick="window.openHabitModal ? window.openHabitModal('{{ selected_date|date:'Y-m-d' }}') : document.querySelector('[data-modal=add]').classList.add('open')" class="mt-4 px-5 py-2.5 bg-green-500 text-white rounded-xl font-semibold hover:bg-green-600">
@@ -297,8 +297,8 @@
       <h3 class="font-bold mb-2">{{ profile.mascot_name }} — {{ profile.mascot_stage.title }}</h3>
       <div class="flex items-start gap-3">
         <div class="relative shrink-0">
-          <img src="{% static 'img/mascot.png' %}"
-               class="w-16 h-16 rounded-xl mascot-bob {{ profile.mascot_stage.halo_css }}"
+          <img src="{% static 'img/mascot_alt.png' %}"
+               class="mascot-img w-16 h-16 rounded-xl bg-white mascot-bob {{ profile.mascot_stage.halo_css }}"
                alt="{{ profile.mascot_stage.title }}">
           {% if profile.mascot_stage.icon %}
             <span class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs shadow soft-float {{ profile.mascot_stage.icon_css }}">

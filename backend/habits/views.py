@@ -7,6 +7,7 @@ from datetime import date, datetime, time, timedelta
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
+from django.db.models import Sum
 from django.http import JsonResponse
 from django.contrib.auth.views import LoginView, LogoutView
 from django.shortcuts import get_object_or_404, redirect, render
@@ -172,7 +173,7 @@ def dashboard(request):
 # ---------------------------------------------------------------------------
 
 
-_CALENDAR_HOUR_RANGE = list(range(6, 24))  # 06:00 — 23:00
+_CALENDAR_HOUR_RANGE = list(range(0, 24))  # 00:00 — 23:00
 _WEEKDAY_LABELS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС']
 _RUSSIAN_MONTHS = [
     'Январь',
@@ -452,19 +453,37 @@ def habit_schedule_move(request, habit_id: int):
         source_date = datetime.strptime(source_raw, '%Y-%m-%d').date() if source_raw else target_date
         hour_raw = payload.get('hour')
         hour = int(hour_raw) if hour_raw not in (None, '') else None
+        clear_time = bool(payload.get('clear_time'))
     except (TypeError, ValueError, json.JSONDecodeError):
         return JsonResponse({'detail': 'Некорректная дата или время.'}, status=400)
     if hour is not None and (hour < _CALENDAR_HOUR_RANGE[0] or hour > _CALENDAR_HOUR_RANGE[-1]):
         return JsonResponse({'detail': 'Время вне диапазона календаря.'}, status=400)
 
     schedule, _ = HabitSchedule.objects.get_or_create(habit=habit)
-    if hour is not None:
+    if clear_time:
+        schedule.window_start = None
+        schedule.window_end = None
+        schedule.reminder_time = None
+    elif hour is not None:
         target_time = time(hour=hour)
         end_hour = min(hour + 1, 23)
         schedule.window_start = target_time
         schedule.window_end = time(hour=end_hour)
         schedule.reminder_time = target_time
-    if hour is None and schedule.frequency_type == 'weekly':
+    if clear_time and schedule.frequency_type == 'custom':
+        schedule.days_of_week = str(target_date.isoweekday())
+        schedule.start_date = target_date
+        schedule.end_date = target_date
+    elif clear_time and schedule.frequency_type == 'weekly':
+        schedule.days_of_week = str(target_date.isoweekday())
+        schedule.start_date, schedule.end_date = _week_bounds(target_date)
+    elif clear_time and (schedule.frequency_type != 'daily' or source_date.isoweekday() != target_date.isoweekday()):
+        schedule.frequency_type = 'weekly'
+        schedule.days_of_week = str(target_date.isoweekday())
+        schedule.start_date, schedule.end_date = _week_bounds(target_date)
+    elif clear_time:
+        schedule.start_date, schedule.end_date = _week_bounds(target_date)
+    elif hour is None and schedule.frequency_type == 'weekly':
         schedule.days_of_week = str(target_date.isoweekday())
         schedule.start_date, schedule.end_date = _week_bounds(target_date)
     elif hour is None or schedule.frequency_type == 'custom':
@@ -733,6 +752,11 @@ def analytics(request):
     insights = UserInsight.objects.filter(user=request.user).order_by('-created_at')[:5]
     achievements = Achievement.objects.all()
     unlocked_ids = set(UserAchievement.objects.filter(user=request.user).values_list('achievement_id', flat=True))
+    completion_total = HabitLog.objects.filter(user=request.user, status__in=['done', 'partial']).count()
+    total_minutes = HabitLog.objects.filter(user=request.user, status__in=['done', 'partial']).aggregate(
+        total=Sum('duration_minutes')
+    )['total'] or 0
+    profile = request.user.profile
     # Map condition_type → Tailwind colour pair. The template can't compute
     # this dynamically because Tailwind's JIT only emits classes it sees as
     # literal strings — interpolating "bg-{{type}}-100" produced invalid
@@ -747,21 +771,46 @@ def analytics(request):
     achievements_data = []
     for a in achievements:
         bg, fg = _BADGE_PALETTE.get(a.condition_type, ('bg-green-100', 'text-green-600'))
+        if a.condition_type == 'streak':
+            current_value = profile.best_streak
+            condition_label = f'Серия {a.condition_value} дн.'
+        elif a.condition_type == 'completion_count':
+            current_value = completion_total
+            condition_label = f'{a.condition_value} выполнений'
+        elif a.condition_type == 'total_time':
+            current_value = total_minutes
+            condition_label = f'{a.condition_value} минут'
+        elif a.condition_type == 'xp':
+            current_value = profile.level
+            condition_label = f'Уровень {a.condition_value}'
+        else:
+            current_value = 1 if a.id in unlocked_ids else 0
+            condition_label = a.get_condition_type_display()
+        progress_pct = min(int(100 * current_value / a.condition_value), 100) if a.condition_value else 0
+        unlocked = a.id in unlocked_ids
         achievements_data.append(
             {
                 'achievement': a,
-                'unlocked': a.id in unlocked_ids,
+                'unlocked': unlocked,
+                'is_close': (not unlocked and progress_pct >= 70),
+                'current_value': current_value,
+                'condition_label': condition_label,
+                'progress_pct': progress_pct,
+                'status_label': 'Получено' if unlocked else ('Близко' if progress_pct >= 70 else 'Не получено'),
                 'badge_bg': bg,
                 'badge_fg': fg,
             }
         )
+    unlocked_achievements = [entry for entry in achievements_data if entry['unlocked']]
+    close_achievements = [entry for entry in achievements_data if entry['is_close']]
+    locked_achievements = [entry for entry in achievements_data if not entry['unlocked'] and not entry['is_close']]
     # Average completion rate. Naively averaging each weekday's percentage
     # double-counts days where the user has no due habits at all (rate=0
     # because expected=0) and silently drags the headline number down. Weight
     # the average by the actual number of expected slots instead.
     total_expected = sum(b['expected'] for b in best_days)
     total_done = sum(b['done'] for b in best_days)
-    avg = int(100 * total_done / total_expected) if total_expected else 0
+    avg = min(int(100 * total_done / total_expected), 100) if total_expected else 0
 
     # Donut chart needs cumulative offsets.
     chart_categories = []
@@ -779,6 +828,7 @@ def analytics(request):
 
     # Find best/weak day for the highlight card.
     best_day = best_days[0] if best_days else None
+    active_days = sum(1 for row in activity if row['count'] > 0)
     # "Morning %" — share of successful logs created before local-noon. We have
     # to compute the hour in the user's timezone in Python because Django's
     # ``__hour`` ORM lookup extracts in the database's connection timezone
@@ -822,9 +872,15 @@ def analytics(request):
         'breakdown': breakdown,
         'chart_categories': chart_categories,
         'achievements_data': achievements_data,
+        'unlocked_achievements': unlocked_achievements,
+        'close_achievements': close_achievements,
+        'locked_achievements': locked_achievements,
         'insights': insights,
         'best_day': best_day,
         'avg_completion': avg,
+        'active_days': active_days,
+        'total_done': total_done,
+        'total_expected': total_expected,
         'morning_pct': morning_pct,
         'correlations': correlations,
     }

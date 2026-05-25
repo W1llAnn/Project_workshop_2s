@@ -147,7 +147,7 @@ def user_best_days(user, days: int = 90) -> list[dict]:
     for wd in range(1, 8):
         expected = expected_per_day[wd]
         done = done_per_day[wd]
-        rate = int(100 * done / expected) if expected else 0
+        rate = min(int(100 * done / expected), 100) if expected else 0
         rows.append({
             'weekday': wd,
             'short': WEEKDAY_RU[wd],
@@ -178,14 +178,12 @@ def user_category_breakdown(user, days: int = 30) -> list[dict]:
     for log in qs:
         habit_tags = list(log.habit.tags.all())
         if not habit_tags:
-            category_totals['Без категории'] += 1.0
             continue
         # Weight per tag, then divide by tag count to keep per-log total at 1.
         per_tag = 1.0 / len(habit_tags)
         for tag in habit_tags:
             weights = weights_by_tag.get(tag.id, [])
             if not weights:
-                category_totals['Без категории'] += per_tag
                 continue
             for category, weight in weights:
                 category_totals[category.name] += per_tag * weight
