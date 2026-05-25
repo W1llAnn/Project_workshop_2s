@@ -12,6 +12,7 @@ urlpatterns = [
     path('calendar/', views.calendar_view, name='calendar'),
     path('habits/new/', views.habit_create, name='habit_create'),
     path('habits/<int:habit_id>/', views.habit_detail, name='habit_detail'),
+    path('habits/<int:habit_id>/edit/', views.habit_edit, name='habit_edit'),
     path('habits/<int:habit_id>/schedule/move/', views.habit_schedule_move, name='habit_schedule_move'),
     path('habits/<int:habit_id>/log/', views.habit_log_today, name='habit_log_today'),
     path('habits/<int:habit_id>/log/undo/', views.habit_log_undo, name='habit_log_undo'),

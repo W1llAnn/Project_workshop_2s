@@ -1,0 +1,32 @@
+<div class="relative inline-flex" data-habit-actions>
+  <button type="button"
+          class="w-8 h-8 rounded-lg bg-white/90 border border-gray-200 text-gray-500 hover:text-gray-800 hover:bg-gray-50 flex items-center justify-center"
+          title="Действия" data-habit-actions-toggle>
+    <i class="fas fa-ellipsis-vertical text-xs"></i>
+  </button>
+  <div class="hidden absolute right-0 top-9 z-40 w-40 rounded-xl border border-gray-100 bg-white shadow-lg p-1 text-sm" data-habit-actions-menu>
+    <a href="{% url 'habit_detail' habit.id %}" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 text-gray-700">
+      <i class="fas fa-eye w-4 text-gray-400"></i> Открыть
+    </a>
+    <a href="{% url 'habit_edit' habit.id %}" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-50 text-gray-700">
+      <i class="fas fa-pen w-4 text-gray-400"></i> Редактировать
+    </a>
+    {% if habit.is_active %}
+      <form method="post" action="{% url 'habit_delete' habit.id %}" onsubmit="return confirm('Архивировать «{{ habit.title|escapejs }}»? История сохранится.')">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-amber-50 text-amber-700 text-left">
+          <i class="fas fa-box-archive w-4"></i> Удалить
+        </button>
+      </form>
+    {% else %}
+      <form method="post" action="{% url 'habit_destroy' habit.id %}" onsubmit="return confirm('Удалить «{{ habit.title|escapejs }}» безвозвратно?')">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <button class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-red-50 text-red-600 text-left">
+          <i class="fas fa-trash w-4"></i> Удалить
+        </button>
+      </form>
+    {% endif %}
+  </div>
+</div>

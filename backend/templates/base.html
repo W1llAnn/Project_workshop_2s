@@ -411,5 +411,20 @@
   })();
 </script>
 {% block scripts %}{% endblock %}
+<script>
+  (function () {
+    document.addEventListener('click', (event) => {
+      document.querySelectorAll('[data-habit-actions-menu]').forEach(menu => {
+        if (!menu.closest('[data-habit-actions]')?.contains(event.target)) menu.classList.add('hidden');
+      });
+      const toggle = event.target.closest('[data-habit-actions-toggle]');
+      if (!toggle) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const menu = toggle.closest('[data-habit-actions]')?.querySelector('[data-habit-actions-menu]');
+      if (menu) menu.classList.toggle('hidden');
+    });
+  })();
+</script>
 </body>
 </html>

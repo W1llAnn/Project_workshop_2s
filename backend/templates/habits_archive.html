@@ -33,6 +33,7 @@
           </div>
         </div>
       </a>
+      {% with habit=item.habit %}{% include "includes/habit_actions.html" %}{% endwith %}
       <div class="flex items-center gap-2">
         <form method="post" action="{% url 'habit_restore' item.habit.id %}">
           {% csrf_token %}
@@ -55,7 +56,7 @@
   </div>
 {% else %}
   <div class="glass-card p-8 text-center anim-pop">
-    <img src="{% static 'img/mascot_alt.png' %}" class="mascot-img w-24 h-24 mx-auto opacity-95 mascot-bob" alt="">
+    <img src="{% static 'img/mascot.png' %}" class="mascot-img w-24 h-24 mx-auto opacity-95 mascot-bob" alt="">
     <h3 class="font-bold text-lg mt-4">Архив пуст</h3>
     <p class="text-sm text-gray-500 mt-1">Когда архивируешь привычку, она появится здесь. История выполнений останется доступной.</p>
     <a href="{% url 'dashboard' %}" class="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-green-500 text-white rounded-xl font-semibold hover:bg-green-600">

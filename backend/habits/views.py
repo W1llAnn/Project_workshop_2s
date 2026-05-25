@@ -530,6 +530,22 @@ def habit_create(request):
     return redirect(_safe_next(request))
 
 
+@login_required
+def habit_edit(request, habit_id: int):
+    habit = get_object_or_404(Habit, id=habit_id, user=request.user)
+    if request.method == 'POST':
+        form = HabitForm(request.POST, instance=habit)
+        if form.is_valid():
+            form.save(user=request.user)
+            messages.success(request, f'Привычка "{habit.title}" обновлена.')
+            return redirect('habit_detail', habit_id=habit.id)
+        errors = '; '.join(msg for msgs in form.errors.values() for msg in msgs)
+        messages.error(request, f'Не удалось обновить привычку: {errors}')
+    else:
+        form = HabitForm(instance=habit)
+    return render(request, 'habit_form.html', {'form': form, 'habit': habit, 'mode': 'edit'})
+
+
 _STATUS_LABELS = {
     'done': 'выполнено',
     'partial': 'частично',

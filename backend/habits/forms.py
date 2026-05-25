@@ -63,6 +63,21 @@ class HabitForm(forms.ModelForm):
     window_end = forms.TimeField(required=False, widget=forms.TimeInput(attrs={'type': 'time'}))
     tag_names = forms.CharField(required=False, help_text='Через запятую: бег, йога, чтение')
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance or not self.instance.pk:
+            return
+        schedule = getattr(self.instance, 'schedule', None)
+        if schedule:
+            self.fields['frequency_type'].initial = schedule.frequency_type
+            self.fields['days_of_week'].initial = schedule.days_of_week
+            self.fields['reminder_time'].initial = schedule.reminder_time
+            self.fields['window_start'].initial = schedule.window_start
+            self.fields['window_end'].initial = schedule.window_end
+            self.fields['schedule_anchor_date'].initial = schedule.start_date
+        self.fields['duration_minutes'].initial = self.instance.target_value
+        self.fields['tag_names'].initial = ', '.join(self.instance.tags.values_list('name', flat=True))
+
     def clean(self):
         cleaned = super().clean()
         # Time window must be specified as a pair, or omitted entirely.
