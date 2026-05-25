@@ -225,6 +225,7 @@ def calendar_view(request):
     view_mode = request.GET.get('view', 'week')
     if view_mode not in {'day', 'week', 'month'}:
         view_mode = 'week'
+    _, recurring_horizon_end = _week_bounds(today)
 
     habits = list(
         Habit.objects.filter(user=request.user, is_active=True).select_related('schedule').prefetch_related('tags')
@@ -258,6 +259,11 @@ def calendar_view(request):
 
     def _pill_for(habit: Habit, day: date) -> dict | None:
         schedule = getattr(habit, 'schedule', None)
+        # Avoid projecting open-ended recurring habits indefinitely into
+        # future months. The calendar remains focused on the current week
+        # unless a schedule has an explicit end date.
+        if (schedule is None or schedule.end_date is None) and day > recurring_horizon_end:
+            return None
         if schedule and not schedule.is_due_on(day):
             return None
         log = log_lookup.get((habit.id, day))
