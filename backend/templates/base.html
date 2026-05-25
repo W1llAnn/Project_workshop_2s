@@ -133,6 +133,13 @@
       50%      { transform: translateY(-4px); }
     }
     .mascot-bob { animation: mascot-bob 4s ease-in-out infinite; }
+    .mascot-img {
+      object-fit: contain;
+      image-rendering: auto;
+      transform: translateZ(0);
+      backface-visibility: hidden;
+      filter: drop-shadow(0 8px 14px rgba(31, 41, 55, .08));
+    }
 
     /* ----- form focus glow ----- */
     input:focus, select:focus, textarea:focus { outline: none; box-shadow: 0 0 0 3px rgba(76,175,80,.18); }
@@ -244,7 +251,7 @@
     <i class="fas fa-plus"></i> Новая привычка
   </button>
   <div class="mt-auto pt-6 border-t border-gray-100 flex items-center gap-3">
-    <img src="{% static 'img/mascot.png' %}" class="w-10 h-10 rounded-full" alt="Mascot">
+    <img src="{% static 'img/mascot.png' %}" class="mascot-img w-10 h-10 rounded-full bg-white" alt="Mascot">
     <div class="flex-1 min-w-0">
       <div class="text-sm font-semibold truncate">{{ user.username }}</div>
       <div class="text-xs text-gray-500 truncate">{{ profile.xp }} / {{ profile.xp_for_next_level }} XP</div>
@@ -292,10 +299,10 @@
       <i class="fas fa-chart-line"></i>
       <span class="text-xs">Статистика</span>
     </a>
-    <a href="#" onclick="document.querySelector('[data-modal=add]')?.classList.add('open');return false;" class="flex flex-col items-center gap-1 text-gray-500">
+    <button type="button" onclick="document.querySelector('[data-modal=add]')?.classList.add('open')" class="flex flex-col items-center gap-1 text-gray-500">
       <i class="fas fa-plus-circle"></i>
       <span class="text-xs">Добавить</span>
-    </a>
+    </button>
     <a href="{% url 'habit_archive' %}" class="flex flex-col items-center gap-1 {% if request.resolver_match.url_name == 'habit_archive' %}text-green-600{% else %}text-gray-500{% endif %}">
       <i class="fas fa-box-archive"></i>
       <span class="text-xs">Архив</span>
@@ -404,5 +411,20 @@
   })();
 </script>
 {% block scripts %}{% endblock %}
+<script>
+  (function () {
+    document.addEventListener('click', (event) => {
+      document.querySelectorAll('[data-habit-actions-menu]').forEach(menu => {
+        if (!menu.closest('[data-habit-actions]')?.contains(event.target)) menu.classList.add('hidden');
+      });
+      const toggle = event.target.closest('[data-habit-actions-toggle]');
+      if (!toggle) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const menu = toggle.closest('[data-habit-actions]')?.querySelector('[data-habit-actions-menu]');
+      if (menu) menu.classList.toggle('hidden');
+    });
+  })();
+</script>
 </body>
 </html>

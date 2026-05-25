@@ -1,0 +1,373 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Дашборд — HabitHamster{% endblock %}
+
+{% block content %}
+<header class="flex flex-wrap items-center justify-between gap-4 mb-6">
+  <div>
+    <h1 class="text-3xl font-bold font-display">Расписание</h1>
+    <p class="text-sm text-gray-500 mt-1">Сегодня, {{ today|date:"j E Y" }}</p>
+  </div>
+  <div class="flex items-center gap-3 flex-wrap">
+    <div class="hidden md:block text-right">
+      <div class="text-xs text-gray-500 uppercase">Уровень {{ profile.level }}</div>
+      <div class="text-sm font-semibold">{{ profile.xp }} / {{ profile.xp_for_next_level }} XP</div>
+    </div>
+    <div class="hidden md:block w-40 h-2 bg-gray-200 rounded-full overflow-hidden">
+      <div class="h-full bg-green-500 progress-fill progress-shine" style="width: 0%" data-progress="{{ profile.level_progress_pct }}"></div>
+    </div>
+    <div class="relative" data-notifications>
+      <button type="button" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200" title="Уведомления" data-notifications-toggle aria-expanded="false">
+        <i class="fas fa-bell text-gray-600"></i>
+      </button>
+      <div class="hidden absolute right-0 top-12 w-80 max-w-[calc(100vw-2rem)] glass-card p-4 z-40 text-left" data-notifications-menu>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-bold">Уведомления</h3>
+          <span class="text-[10px] uppercase text-gray-400 font-semibold">сегодня</span>
+        </div>
+        {% if due_today or insights %}
+          <div class="space-y-2">
+            {% if due_today %}
+              <div class="flex gap-3 rounded-xl bg-green-50 p-3 text-sm">
+                <i class="fas fa-calendar-check text-green-600 mt-0.5"></i>
+                <div>
+                  <div class="font-semibold text-gray-800">Сегодня у тебя запланированы привычки</div>
+                  <div class="text-xs text-gray-500 mt-0.5">{{ done_today }} из {{ due_today }} уже отмечено.</div>
+                </div>
+              </div>
+              <div class="flex gap-3 rounded-xl bg-orange-50 p-3 text-sm">
+                <i class="fas fa-bell text-orange-600 mt-0.5"></i>
+                <div>
+                  <div class="font-semibold text-gray-800">Не забудь отметить прогресс</div>
+                  <div class="text-xs text-gray-500 mt-0.5">Даже частичное выполнение сохраняет темп.</div>
+                </div>
+              </div>
+            {% endif %}
+            {% if insights %}
+              <a href="{% url 'analytics' %}" class="flex gap-3 rounded-xl bg-blue-50 p-3 text-sm hover:bg-blue-100 transition">
+                <i class="fas fa-lightbulb text-blue-600 mt-0.5"></i>
+                <div>
+                  <div class="font-semibold text-gray-800">Инсайты обновлены в аналитике</div>
+                  <div class="text-xs text-gray-500 mt-0.5">Открой аналитику, чтобы увидеть свежие подсказки.</div>
+                </div>
+              </a>
+            {% endif %}
+          </div>
+        {% else %}
+          <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-center text-sm text-gray-500">
+            Пока нет новых уведомлений
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    <button onclick="window.openHabitModal ? window.openHabitModal('{{ selected_date|date:'Y-m-d' }}') : document.querySelector('[data-modal=add]').classList.add('open')" class="px-4 py-2 bg-green-500 text-white rounded-xl font-semibold hover:bg-green-600 flex items-center gap-2">
+      <i class="fas fa-plus"></i> Новая привычка
+    </button>
+  </div>
+</header>
+
+<!-- Welcome / week stream banner -->
+<div class="grid lg:grid-cols-3 gap-4 mb-6 stagger">
+  <div class="lg:col-span-2 glass-card hero-shimmer relative overflow-hidden p-6 bg-gradient-to-r from-green-200 via-green-100 to-orange-50">
+    <div class="flex items-start gap-4 relative z-10">
+      <div class="flex-1">
+        <h2 class="text-2xl md:text-3xl font-bold mb-1 font-display">Твой недельный поток</h2>
+        <p class="text-gray-700">Визуализируй свой успех шаг за шагом! 🐹</p>
+        <div class="mt-4 flex flex-wrap gap-3 text-sm">
+          <span class="px-3 py-1.5 rounded-full bg-white/80 border border-green-200 text-green-700 font-semibold">
+            <i class="fas fa-fire-flame-curved text-orange-500 mr-1 streak-pulse"></i>Серия <span data-count-to="{{ profile.current_streak }}">0</span> дн.
+          </span>
+          <span class="px-3 py-1.5 rounded-full bg-white/80 border border-orange-200 text-orange-700 font-semibold">
+            <i class="fas fa-trophy mr-1"></i>Лучшая <span data-count-to="{{ profile.best_streak }}">0</span> дн.
+          </span>
+          <span class="px-3 py-1.5 rounded-full bg-white/80 border border-blue-200 text-blue-700 font-semibold">
+            <i class="fas fa-bullseye mr-1"></i>Сегодня <span data-count-to="{{ done_today }}">0</span> / {{ due_today }}
+          </span>
+        </div>
+      </div>
+      <img src="{% static 'img/mascot.png' %}" class="mascot-img w-28 h-28 hidden sm:block self-end -mr-2 -mb-2 mascot-bob" alt="">
+    </div>
+  </div>
+  <div class="glass-card p-6 flex flex-col justify-center text-center">
+    <div class="text-xs text-gray-500 uppercase tracking-wider">Прогресс недельной цели</div>
+    <div class="text-5xl font-bold mt-2 text-gray-800">
+      <span data-count-to="{{ weekly_completion_rate }}" data-count-suffix="%">0%</span>
+    </div>
+    <div class="w-full h-2 mt-3 bg-gray-100 rounded-full overflow-hidden">
+      <div class="h-full bg-gradient-to-r from-green-400 to-green-600 progress-fill progress-shine"
+           style="width:0%" data-progress="{{ weekly_completion_rate }}"></div>
+    </div>
+    <div class="mt-3 px-4 py-2 rounded-full bg-gradient-to-r from-green-500 to-green-600 text-white text-sm font-semibold shadow-sm">
+      <span data-count-to="{{ wt_done }}">0</span> из {{ wt_total_real }} отметок
+    </div>
+  </div>
+</div>
+
+<!-- Habits list + mini calendar -->
+<div class="grid lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 space-y-4">
+    <div class="flex items-center justify-between gap-3">
+      <h2 class="text-lg font-bold">{{ selected_day_heading }}</h2>
+      <a href="{% url 'calendar' %}?view=day&date={{ selected_date|date:'Y-m-d' }}" class="text-xs text-green-700 font-semibold hover:text-green-800 inline-flex items-center gap-1.5">
+        <i class="fas fa-calendar-days"></i> Открыть в календаре
+      </a>
+    </div>
+    {% if timed_habits or untimed_habits %}
+      <div class="flex flex-wrap gap-2 text-xs text-gray-500">
+        {% if timed_habits %}
+          <span class="px-2.5 py-1 rounded-full bg-green-50 text-green-700 font-semibold">
+            <i class="fas fa-clock mr-1"></i>По времени: {{ timed_habits|length }}
+          </span>
+        {% endif %}
+        {% if untimed_habits %}
+          <span class="px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 font-semibold">
+            Без времени: {{ untimed_habits|length }}
+          </span>
+        {% endif %}
+      </div>
+    {% endif %}
+    <div class="space-y-3 stagger">
+    {% for item in habits %}
+      <div class="glass-card habit-card p-4 flex items-center gap-4 lift">
+        <a href="{% url 'habit_detail' item.habit.id %}" class="flex items-center gap-4 flex-1 min-w-0">
+          <div class="w-12 h-12 rounded-full bg-{{ item.habit.color }}-100 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-{{ item.habit.icon }} text-{{ item.habit.color }}-600 text-xl"></i>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="font-semibold truncate flex items-center gap-2">
+              {{ item.habit.title }}
+              {% if item.habit.schedule.has_window and item.is_active_now and not item.is_done %}
+                <span class="text-[10px] px-1.5 py-0.5 rounded-full bg-green-500 text-white font-semibold uppercase tracking-wide">сейчас</span>
+              {% endif %}
+            </div>
+            <div class="text-xs text-gray-500 mt-0.5 truncate">
+              <span class="font-semibold text-gray-700">{{ item.time_label }}</span>
+              •
+              {% if item.habit.target_type == 'minutes' %}{{ item.habit.target_value }} мин •{% endif %}
+              {{ item.habit.get_target_unit_display }}
+              {% if item.habit.schedule %} • {% if item.habit.schedule.frequency_type == 'custom' %}Сегодня{% else %}{{ item.habit.schedule.get_frequency_type_display }}{% endif %}{% endif %}
+              {% if item.habit.schedule.has_window %}
+                • {{ item.habit.schedule.window_start|time:"H:i" }}–{{ item.habit.schedule.window_end|time:"H:i" }}
+              {% endif %}
+            </div>
+            {% if item.habit.tags.all %}
+              <div class="flex gap-1 mt-1.5 flex-wrap">
+                {% for tag in item.habit.tags.all|slice:":3" %}
+                  <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">{{ tag.name }}</span>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </a>
+        {% if item.today_status == 'done' %}
+          <form method="post" action="{% url 'habit_log_undo' item.habit.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="log_date" value="{{ selected_date|date:'Y-m-d' }}">
+            <button title="Снять отметку"
+                    class="group px-4 py-2 bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-700 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-colors">
+              <i class="fas fa-check-circle group-hover:hidden"></i>
+              <i class="fas fa-rotate-left hidden group-hover:inline"></i>
+              <span class="group-hover:hidden">Готово</span>
+              <span class="hidden group-hover:inline">Снять</span>
+            </button>
+          </form>
+        {% elif item.today_status == 'partial' %}
+          <form method="post" action="{% url 'habit_log_undo' item.habit.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="log_date" value="{{ selected_date|date:'Y-m-d' }}">
+            <button title="Снять отметку"
+                    class="group px-4 py-2 bg-yellow-100 text-yellow-700 hover:bg-red-100 hover:text-red-700 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-colors">
+              <i class="fas fa-percent group-hover:hidden"></i>
+              <i class="fas fa-rotate-left hidden group-hover:inline"></i>
+              <span class="group-hover:hidden">Частично</span>
+              <span class="hidden group-hover:inline">Снять</span>
+            </button>
+          </form>
+        {% elif item.today_status == 'skipped' %}
+          <form method="post" action="{% url 'habit_log_undo' item.habit.id %}">
+            {% csrf_token %}
+            <input type="hidden" name="log_date" value="{{ selected_date|date:'Y-m-d' }}">
+            <button title="Снять отметку"
+                    class="group px-4 py-2 bg-gray-100 text-gray-700 hover:bg-red-100 hover:text-red-700 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-colors">
+              <i class="fas fa-circle-minus group-hover:hidden"></i>
+              <i class="fas fa-rotate-left hidden group-hover:inline"></i>
+              <span class="group-hover:hidden">Пропущено</span>
+              <span class="hidden group-hover:inline">Снять</span>
+            </button>
+          </form>
+        {% else %}
+          <div class="flex items-center gap-1">
+            <form method="post" action="{% url 'habit_log_today' item.habit.id %}">
+              {% csrf_token %}
+              <input type="hidden" name="log_date" value="{{ selected_date|date:'Y-m-d' }}">
+              <input type="hidden" name="status" value="done">
+              <input type="hidden" name="duration_minutes" value="{{ item.habit.target_value }}">
+              <button title="Выполнено"
+                      class="px-3 py-2 bg-green-500 text-white rounded-l-lg text-sm font-semibold hover:bg-green-600 flex items-center gap-1.5">
+                <i class="fas fa-check"></i><span class="hidden sm:inline">Выполнить</span>
+              </button>
+            </form>
+            <form method="post" action="{% url 'habit_log_today' item.habit.id %}">
+              {% csrf_token %}
+              <input type="hidden" name="log_date" value="{{ selected_date|date:'Y-m-d' }}">
+              <input type="hidden" name="status" value="skipped">
+              <button title="Осознанно пропустить"
+                      class="px-3 py-2 bg-white text-gray-500 border border-gray-200 rounded-r-lg text-sm font-semibold hover:bg-gray-50">
+                <i class="fas fa-xmark"></i>
+              </button>
+            </form>
+          </div>
+        {% endif %}
+        {% with habit=item.habit %}{% include "includes/habit_actions.html" %}{% endwith %}
+      </div>
+    {% empty %}
+      <div class="glass-card p-8 text-center anim-pop">
+        <img src="{% static 'img/mascot.png' %}" class="mascot-img w-24 h-24 mx-auto opacity-95 mascot-bob" alt="">
+        <h3 class="font-bold text-lg mt-4">На этот день привычек нет</h3>
+        <p class="text-sm text-gray-500 mt-1">Выбери другую дату или создай привычку для этого дня.</p>
+        <button onclick="window.openHabitModal ? window.openHabitModal('{{ selected_date|date:'Y-m-d' }}') : document.querySelector('[data-modal=add]').classList.add('open')" class="mt-4 px-5 py-2.5 bg-green-500 text-white rounded-xl font-semibold hover:bg-green-600">
+          <i class="fas fa-plus mr-1"></i> Создать привычку
+        </button>
+      </div>
+    {% endfor %}
+    </div>
+
+    <div class="mt-8">
+      <div class="flex items-center justify-between gap-3 mb-3">
+        <h2 class="text-lg font-bold">Инсайты</h2>
+        <a href="{% url 'analytics' %}" class="text-xs text-green-700 font-semibold hover:text-green-800">Все в аналитике</a>
+      </div>
+      {% if insights %}
+        <div class="grid sm:grid-cols-2 gap-3 stagger">
+          {% for insight in insights %}
+            <div class="glass-card p-4 lift border-l-4 border-green-400">
+              <div class="flex items-center gap-2 text-xs text-green-700 font-semibold uppercase">
+                <i class="fas fa-lightbulb text-orange-500"></i>
+                {{ insight.get_insight_type_display }}
+              </div>
+              <div class="font-semibold mt-2">{{ insight.title }}</div>
+              <div class="text-sm text-gray-600 mt-1">{{ insight.message }}</div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="glass-card p-5 flex items-center gap-4 text-sm text-gray-600">
+          <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400">
+            <i class="fas fa-lightbulb"></i>
+          </div>
+          <div>
+            <div class="font-semibold text-gray-800">Пока недостаточно данных для инсайтов</div>
+            <div class="text-xs text-gray-500 mt-0.5">Отмечай привычки несколько дней, и здесь появятся персональные подсказки.</div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Mini calendar -->
+  <aside id="calendar" class="scroll-mt-20 stagger">
+    <div class="glass-card p-4">
+      <div class="flex items-center justify-between mb-3">
+        <a href="{{ calendar_link }}" class="text-lg font-bold font-display hover:text-green-700 transition" title="Открыть полный календарь">
+          {{ calendar_month|date:"F Y"|capfirst }}
+        </a>
+        <div class="flex items-center gap-1 text-gray-400">
+          <a href="{% url 'dashboard' %}?date={{ calendar_prev_month|date:'Y-m-d' }}" class="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center"><i class="fas fa-chevron-left text-xs"></i></a>
+          <a href="{{ calendar_link }}" class="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center" title="Полный календарь"><i class="fas fa-up-right-from-square text-[10px]"></i></a>
+          <a href="{% url 'dashboard' %}?date={{ calendar_next_month|date:'Y-m-d' }}" class="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center"><i class="fas fa-chevron-right text-xs"></i></a>
+        </div>
+      </div>
+      <div class="grid grid-cols-7 gap-1 text-xs text-center">
+        <div class="text-gray-400">Пн</div><div class="text-gray-400">Вт</div><div class="text-gray-400">Ср</div>
+        <div class="text-gray-400">Чт</div><div class="text-gray-400">Пт</div><div class="text-gray-400">Сб</div>
+        <div class="text-gray-400">Вс</div>
+        {% for cell in calendar_cells %}
+          <a href="{{ cell.dashboard_url }}" class="aspect-square flex items-center justify-center rounded-lg text-xs transition hover:bg-green-50
+              {% if cell.is_selected %}ring-2 ring-green-500 bg-green-500 text-white font-bold
+              {% elif cell.is_today %}bg-green-100 text-green-700 font-bold
+              {% elif cell.has_activity and cell.in_month %}bg-green-50 text-green-700 font-semibold
+              {% elif cell.in_month %}text-gray-700
+              {% else %}text-gray-300{% endif %}">
+            {{ cell.date.day }}
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="glass-card p-4 mt-4">
+      <h3 class="font-bold mb-2">{{ profile.mascot_name }} — {{ profile.mascot_stage.title }}</h3>
+      <div class="flex items-start gap-3">
+        <div class="relative shrink-0">
+          <img src="{% static 'img/mascot.png' %}"
+               class="mascot-img w-16 h-16 rounded-xl bg-white mascot-bob {{ profile.mascot_stage.halo_css }}"
+               alt="{{ profile.mascot_stage.title }}">
+          {% if profile.mascot_stage.icon %}
+            <span class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs shadow soft-float {{ profile.mascot_stage.icon_css }}">
+              <i class="fas {{ profile.mascot_stage.icon }}"></i>
+            </span>
+          {% endif %}
+          {% if profile.mascot_stage.vibe_icon %}
+            <span class="absolute -top-1 -left-1 text-sm streak-pulse {{ profile.mascot_stage.vibe_css }}">
+              <i class="fas {{ profile.mascot_stage.vibe_icon }}"></i>
+            </span>
+          {% endif %}
+        </div>
+        <p class="text-sm text-gray-600 leading-relaxed">
+          {% if profile.mascot_mood == 'excited' %}
+            🔥 Серия {{ profile.current_streak }} дней! Ты на огне.
+          {% elif profile.mascot_mood == 'happy' %}
+            🙌 Хороший темп. Не сбавляй!
+          {% else %}
+            Я скучаю… давай сделаем хотя бы маленький шаг сегодня.
+          {% endif %}
+        </p>
+      </div>
+      {% if profile.mascot_stage.next_title %}
+        <div class="mt-3">
+          <div class="flex justify-between text-[10px] text-gray-500 mb-1">
+            <span>До «{{ profile.mascot_stage.next_title }}»</span>
+            <span>{{ profile.mascot_stage.stage_progress_pct }}%</span>
+          </div>
+          <div class="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div class="h-full bg-gradient-to-r from-green-400 to-green-600 progress-fill progress-shine"
+                 style="width:0%" data-progress="{{ profile.mascot_stage.stage_progress_pct }}"></div>
+          </div>
+        </div>
+      {% else %}
+        <p class="mt-3 text-[10px] text-yellow-700 bg-yellow-50 rounded-lg px-2 py-1 text-center">Финальная стадия — выше уже некуда. Ты легенда.</p>
+      {% endif %}
+    </div>
+  </aside>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    const root = document.querySelector('[data-notifications]');
+    if (!root) return;
+    const toggle = root.querySelector('[data-notifications-toggle]');
+    const menu = root.querySelector('[data-notifications-menu]');
+    if (!toggle || !menu) return;
+    const close = () => {
+      menu.classList.add('hidden');
+      toggle.setAttribute('aria-expanded', 'false');
+    };
+    toggle.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const isHidden = menu.classList.contains('hidden');
+      menu.classList.toggle('hidden', !isHidden);
+      toggle.setAttribute('aria-expanded', String(isHidden));
+    });
+    document.addEventListener('click', (event) => {
+      if (!root.contains(event.target)) close();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') close();
+    });
+  })();
+</script>
+{% endblock %}
+
+

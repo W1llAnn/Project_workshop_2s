@@ -32,22 +32,24 @@
         </h2>
         <p class="text-gray-700 mt-3 max-w-xl">
           {% if best_day %}
-            {{ best_day.name }} — твой пик ({{ best_day.rate }}%). Планируй сложные задачи в это «золотое окно».
+            {{ best_day.name }} — самый активный день. Выполнено {{ best_day.done }} из {{ best_day.expected }} отметок.
           {% else %}
             Отметь хотя бы одну привычку — и я подскажу твои паттерны.
           {% endif %}
         </p>
-        <button class="mt-4 px-5 py-2 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 shadow-sm flex items-center gap-2">
-          <i class="fas fa-chart-simple"></i> Оптимизировать день
+        <button type="button" disabled
+                class="mt-4 px-5 py-2 bg-gray-200 text-gray-500 rounded-xl text-sm font-semibold shadow-sm flex items-center gap-2 cursor-not-allowed"
+                title="Функция появится позже">
+          <i class="fas fa-chart-simple"></i> Оптимизировать день · скоро
         </button>
       </div>
     </div>
-    <img src="{% static 'img/mascot.png' %}" class="w-24 h-24 absolute -bottom-2 -right-2 opacity-80 hidden lg:block mascot-bob">
+    <img src="{% static 'img/mascot.png' %}" class="mascot-img w-24 h-24 absolute -bottom-2 -right-2 opacity-90 hidden lg:block mascot-bob" alt="">
   </div>
 
   <!-- Donut: categories -->
   <div class="glass-card p-6 lift">
-    <h3 class="font-bold mb-4">Привычки по категориям</h3>
+    <h3 class="font-bold mb-4">Распределение привычек</h3>
     {% if chart_categories %}
       <svg viewBox="0 0 36 36" class="w-40 h-40 mx-auto -rotate-90">
         <circle cx="18" cy="18" r="15.9" fill="transparent" stroke="#E5E7EB" stroke-width="3.6"/>
@@ -74,7 +76,11 @@
         {% endfor %}
       </ul>
     {% else %}
-      <p class="text-sm text-gray-500">Добавь привычки с тегами, чтобы увидеть разрез.</p>
+      <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-5 text-center">
+        <i class="fas fa-tags text-gray-300 text-2xl mb-2"></i>
+        <p class="text-sm font-semibold text-gray-700">Добавьте категории к привычкам, чтобы видеть распределение</p>
+        <p class="text-xs text-gray-500 mt-1">График появится, когда у тегов будут аналитические категории.</p>
+      </div>
     {% endif %}
   </div>
 </div>
@@ -84,13 +90,13 @@
   <div class="flex items-baseline justify-between mb-4">
     <div>
       <h3 class="font-bold">Активность за период</h3>
-      <p class="text-xs text-gray-500">Ежедневные выполнения за {{ days }} дней</p>
+      <p class="text-xs text-gray-500">Выполнено {{ total_done }} из {{ total_expected }} отметок · активных дней: {{ active_days }}</p>
     </div>
     <div class="text-right">
       <div class="text-2xl font-bold">
-        <span data-count-to="{{ avg_completion }}" data-count-suffix="%">0%</span>
+        Стабильность: <span data-count-to="{{ avg_completion }}" data-count-suffix="%">0%</span>
       </div>
-      <div class="text-xs text-gray-400 uppercase">средняя стабильность</div>
+      <div class="text-xs text-gray-400 uppercase">не выше 100%</div>
     </div>
   </div>
   <div class="h-40 flex items-end gap-1">
@@ -119,7 +125,7 @@
           <div class="flex justify-between text-sm mb-1">
             <span>{{ d.name }}</span>
             <span class="font-semibold">
-              <span data-count-to="{{ d.rate }}" data-count-suffix="%">0%</span>
+              {{ d.done }} из {{ d.expected }}
             </span>
           </div>
           <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -130,14 +136,14 @@
       {% endfor %}
     </div>
     {% if best_day %}
-      <p class="text-xs text-gray-500 italic mt-4">{{ best_day.name }} — твой самый продуктивный день ({{ best_day.rate }}%).</p>
+      <p class="text-xs text-gray-500 italic mt-4">{{ best_day.name }} — самый активный день. Стабильность: {{ best_day.rate }}%.</p>
     {% endif %}
   </div>
 
   <div class="glass-card p-6 lift">
     <div class="flex items-baseline justify-between mb-4">
       <h3 class="font-bold">Значки достижений</h3>
-      <span class="text-xs text-green-600 font-semibold cursor-pointer hover:text-green-700">СМОТРЕТЬ ВСЕ</span>
+      <button type="button" class="text-xs text-green-600 font-semibold hover:text-green-700" data-achievements-open>СМОТРЕТЬ ВСЕ</button>
     </div>
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 stagger">
       {% for entry in achievements_data %}
@@ -186,25 +192,189 @@
   </div>
 {% endif %}
 
-{% if insights %}
-  <div class="mt-6 glass-card p-6 text-center anim-fade-up" style="animation-delay:.2s">
-    <img src="{% static 'img/mascot.png' %}" class="w-16 h-16 mx-auto mb-3 mascot-bob">
-    <h3 class="font-bold text-lg">Ты справляешься потрясающе!</h3>
-    <p class="text-sm text-gray-500 mt-1 max-w-md mx-auto">
-      Каждый маленький шаг — это огромный скачок к лучшей версии себя. Хэмми болеет за тебя.
-    </p>
-    <div class="grid sm:grid-cols-2 gap-3 mt-6 text-left">
+<section class="mt-6 glass-card p-6 anim-fade-up" style="animation-delay:.2s">
+  <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-5">
+    <div class="flex items-start gap-4">
+      <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+        <i class="fas fa-lightbulb text-orange-600 text-xl"></i>
+      </div>
+      <div>
+        <p class="text-xs text-gray-500 uppercase tracking-wider">Персональные подсказки</p>
+        <h3 class="font-bold text-xl mt-1">Инсайты</h3>
+        <p class="text-sm text-gray-500 mt-1 max-w-2xl">
+          Короткие выводы по твоему прогрессу: сильные дни, слабые места и категории, которые чаще всего появляются в привычках.
+        </p>
+      </div>
+    </div>
+    <span class="text-xs bg-green-50 text-green-700 border border-green-200 px-3 py-1 rounded-full font-semibold whitespace-nowrap">
+      за {{ days }} дней
+    </span>
+  </div>
+
+  {% if insights %}
+    <div class="grid md:grid-cols-2 gap-4">
       {% for insight in insights %}
-        <div class="bg-green-50 rounded-xl p-4">
-          <div class="text-xs text-green-700 font-semibold uppercase">{{ insight.get_insight_type_display }}</div>
-          <div class="font-semibold mt-1">{{ insight.title }}</div>
-          <div class="text-sm text-gray-600 mt-1">{{ insight.message }}</div>
-        </div>
+        <article class="rounded-xl p-4 bg-gradient-to-br from-green-50 to-white border border-green-100 lift">
+          <div class="flex items-center justify-between gap-3">
+            <div class="text-xs text-green-700 font-semibold uppercase">{{ insight.get_insight_type_display }}</div>
+            {% if insight.period_start and insight.period_end %}
+              <div class="text-[10px] text-gray-400 whitespace-nowrap">
+                {{ insight.period_start|date:"d.m" }}–{{ insight.period_end|date:"d.m" }}
+              </div>
+            {% endif %}
+          </div>
+          <div class="font-semibold mt-2">{{ insight.title }}</div>
+          <div class="text-sm text-gray-600 mt-1 leading-relaxed">{{ insight.message }}</div>
+        </article>
       {% endfor %}
     </div>
+  {% else %}
+    <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center">
+      <img src="{% static 'img/mascot.png' %}" class="mascot-img w-14 h-14 mx-auto mb-3 opacity-95 mascot-bob" alt="">
+      <div class="font-semibold text-gray-800">Пока недостаточно данных для инсайтов</div>
+      <p class="text-sm text-gray-500 mt-1 max-w-md mx-auto">
+        Отмечай привычки несколько дней подряд, и здесь появятся выводы по лучшим дням, слабым местам и категориям.
+      </p>
+    </div>
+  {% endif %}
+</section>
+
+<div class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 backdrop-blur-sm p-4" data-achievements-modal>
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[88vh] overflow-y-auto p-6" data-achievements-panel>
+    <div class="flex items-start justify-between gap-4 mb-5">
+      <div>
+        <p class="text-xs text-gray-500 uppercase tracking-wider">Коллекция прогресса</p>
+        <h2 class="text-2xl font-bold font-display mt-1">Все достижения</h2>
+      </div>
+      <button type="button" class="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center" data-achievements-close title="Закрыть">
+        <i class="fas fa-times text-gray-600"></i>
+      </button>
+    </div>
+
+    <div class="space-y-6">
+      <section>
+        <h3 class="font-bold mb-3">Полученные</h3>
+        {% if unlocked_achievements %}
+          <div class="grid md:grid-cols-2 gap-3">
+            {% for entry in unlocked_achievements %}
+              <article class="rounded-xl border border-green-100 bg-green-50 p-4">
+                <div class="flex items-start gap-3">
+                  <div class="w-11 h-11 rounded-full {{ entry.badge_bg }} flex items-center justify-center shrink-0">
+                    <i class="fas fa-{{ entry.achievement.icon|default:'medal' }} {{ entry.badge_fg }}"></i>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center justify-between gap-2">
+                      <h4 class="font-semibold">{{ entry.achievement.title }}</h4>
+                      <span class="text-[10px] px-2 py-1 rounded-full bg-white text-green-700 font-semibold">{{ entry.status_label }}</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-1">{{ entry.achievement.description }}</p>
+                    <p class="text-xs text-gray-500 mt-2">Условие: {{ entry.condition_label }}</p>
+                    <div class="h-1.5 bg-white rounded-full overflow-hidden mt-2">
+                      <div class="h-full bg-green-500" style="width: {{ entry.progress_pct }}%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Прогресс: {{ entry.current_value }} / {{ entry.achievement.condition_value }}</p>
+                  </div>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">Пока нет полученных достижений.</div>
+        {% endif %}
+      </section>
+
+      <section>
+        <h3 class="font-bold mb-3">Близкие к получению</h3>
+        {% if close_achievements %}
+          <div class="grid md:grid-cols-2 gap-3">
+            {% for entry in close_achievements %}
+              <article class="rounded-xl border border-orange-100 bg-orange-50 p-4">
+                <div class="flex items-start gap-3">
+                  <div class="w-11 h-11 rounded-full bg-white flex items-center justify-center shrink-0 text-orange-500">
+                    <i class="fas fa-{{ entry.achievement.icon|default:'medal' }}"></i>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center justify-between gap-2">
+                      <h4 class="font-semibold">{{ entry.achievement.title }}</h4>
+                      <span class="text-[10px] px-2 py-1 rounded-full bg-white text-orange-700 font-semibold">{{ entry.status_label }}</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-1">{{ entry.achievement.description }}</p>
+                    <p class="text-xs text-gray-500 mt-2">Условие: {{ entry.condition_label }}</p>
+                    <div class="h-1.5 bg-white rounded-full overflow-hidden mt-2">
+                      <div class="h-full bg-orange-400" style="width: {{ entry.progress_pct }}%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Прогресс: {{ entry.current_value }} / {{ entry.achievement.condition_value }}</p>
+                  </div>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">Почти готовых достижений пока нет.</div>
+        {% endif %}
+      </section>
+
+      <section>
+        <h3 class="font-bold mb-3">Ещё не полученные</h3>
+        {% if locked_achievements %}
+          <div class="grid md:grid-cols-2 gap-3">
+            {% for entry in locked_achievements %}
+              <article class="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                <div class="flex items-start gap-3">
+                  <div class="w-11 h-11 rounded-full bg-white flex items-center justify-center shrink-0 text-gray-400">
+                    <i class="fas fa-{{ entry.achievement.icon|default:'medal' }}"></i>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center justify-between gap-2">
+                      <h4 class="font-semibold">{{ entry.achievement.title }}</h4>
+                      <span class="text-[10px] px-2 py-1 rounded-full bg-white text-gray-500 font-semibold">{{ entry.status_label }}</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-1">{{ entry.achievement.description }}</p>
+                    <p class="text-xs text-gray-500 mt-2">Условие: {{ entry.condition_label }}</p>
+                    <div class="h-1.5 bg-white rounded-full overflow-hidden mt-2">
+                      <div class="h-full bg-gray-300" style="width: {{ entry.progress_pct }}%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Прогресс: {{ entry.current_value }} / {{ entry.achievement.condition_value }}</p>
+                  </div>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">Все достижения уже получены.</div>
+        {% endif %}
+      </section>
+    </div>
   </div>
-{% endif %}
+</div>
 
 {% endblock %}
 
+{% block scripts %}
+<script>
+  (function () {
+    const modal = document.querySelector('[data-achievements-modal]');
+    const openBtn = document.querySelector('[data-achievements-open]');
+    const closeBtn = document.querySelector('[data-achievements-close]');
+    const panel = document.querySelector('[data-achievements-panel]');
+    if (!modal || !openBtn || !closeBtn || !panel) return;
+    const open = () => {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    };
+    const close = () => {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    };
+    openBtn.addEventListener('click', open);
+    closeBtn.addEventListener('click', close);
+    modal.addEventListener('click', (event) => {
+      if (!panel.contains(event.target)) close();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') close();
+    });
+  })();
+</script>
+{% endblock %}
 

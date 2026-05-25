@@ -1,11 +1,14 @@
 """
 Django settings for HabitHamster.
 
-Supports three run modes:
+Supports two run modes:
 
 1. Local quick-start (default): SQLite, no .environment file required.
-2. Docker / production-like: reads .environment file with DB_* variables and
+2. Docker / production: reads DB_* env vars (or a .environment file) and
    uses PostgreSQL.
+
+The flag ``USE_SQLITE`` (env or default ``True`` when no ``DB_NAME`` env var)
+selects the engine.
 """
 
 import os
@@ -16,11 +19,19 @@ import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 env = environ.Env(
     DEBUG=(bool, True),
-    ALLOWED_HOSTS=(list, ['*']),
-    CSRF_TRUSTED_ORIGINS=(list, []),
+    SECRET_KEY=(str, 'django-insecure-change-me-for-local-development-only'),
+    # Local defaults are preview-friendly. For production/demo hardening, set
+    # exact ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS through environment vars.
+    ALLOWED_HOSTS=(list, ['localhost', '127.0.0.1', '.ngrok-free.app', '.trycloudflare.com', '.loca.lt', '.localhost.run', '.lhr.life', '.serveo.net']),
+    CSRF_TRUSTED_ORIGINS=(list, ['http://localhost:8000', 'http://127.0.0.1:8000', 'https://*.ngrok-free.app', 'https://*.trycloudflare.com', 'https://*.loca.lt', 'https://*.localhost.run', 'https://*.lhr.life', 'https://*.serveo.net']),
+    USE_SQLITE=(bool, True),
+    DB_NAME=(str, ''),
+    DB_USER=(str, ''),
+    DB_PASSWORD=(str, ''),
+    DB_HOST=(str, ''),
+    DB_PORT=(str, ''),
 )
 
 # Read .environment if present; otherwise rely on env defaults above.
@@ -28,10 +39,11 @@ env_file = BASE_DIR / '.environment'
 if env_file.exists():
     environ.Env.read_env(str(env_file))
 
+
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env('DEBUG')
 ALLOWED_HOSTS = env('ALLOWED_HOSTS')
-
+# HTTPS-eligible origins (with scheme) for CSRF — comma-separated env var.
 csrf_origins = env('CSRF_TRUSTED_ORIGINS')
 if csrf_origins:
     CSRF_TRUSTED_ORIGINS = csrf_origins
@@ -52,6 +64,9 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'core.middleware.BlobDBSyncMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    # Serve collected /static/ files via WSGI. In DEBUG mode WhiteNoise no-ops
+    # (Django's runserver serves them); in production (Docker behind nginx)
+    # it serves STATIC_ROOT directly so /static/admin/* works.
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -73,6 +88,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'habits.context_processors.profile_context',
             ],
         },
     },
@@ -80,16 +96,26 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': env('DB_NAME'),
-        'USER': env('DB_USER'),
-        'PASSWORD': env('DB_PASSWORD'),
-        'HOST': env('DB_HOST'),
-        'PORT': env('DB_PORT'),
+
+# Database — SQLite by default for easy local dev, Postgres when DB_NAME is set.
+if env('USE_SQLITE') or not env('DB_NAME'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': env('DB_NAME'),
+            'USER': env('DB_USER'),
+            'PASSWORD': env('DB_PASSWORD'),
+            'HOST': env('DB_HOST'),
+            'PORT': env('DB_PORT'),
+        }
+    }
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -117,6 +143,8 @@ STORAGES = {
     'default': {
         'BACKEND': 'django.core.files.storage.FileSystemStorage',
     },
+    # Compressed (gzip/brotli) but non-manifested storage so collectstatic
+    # output is portable across DEBUG values.
     'staticfiles': {
         'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage',
     },

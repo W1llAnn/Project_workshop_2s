@@ -82,6 +82,7 @@ class UserProfile(models.Model):
             if self.level >= candidate[0]:
                 stage = candidate
         min_level, key, title, icon, icon_css, halo_css = stage
+        # Vibe modifier driven by current streak.
         if self.current_streak >= 14:
             vibe = 'stellar'
             vibe_icon = 'fa-star'
@@ -98,6 +99,7 @@ class UserProfile(models.Model):
             vibe = 'calm'
             vibe_icon = ''
             vibe_css = ''
+        # XP-to-next-stage progress so the UI can show a real bar.
         next_threshold = None
         for candidate in self.MASCOT_STAGES:
             if candidate[0] > self.level:
@@ -342,6 +344,7 @@ class HabitSchedule(models.Model):
         start, end = self.window_start, self.window_end
         if start <= end:
             return start <= now_t <= end
+        # Wrap past midnight.
         return now_t >= start or now_t <= end
 
 

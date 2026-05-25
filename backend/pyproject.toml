@@ -1,6 +1,26 @@
 [project]
 name = 'habithamster'
 version = '0.1.0'
+requires-python = '>=3.12'
+# Mirrors requirements.txt; the Docker image installs from requirements.txt.
+dependencies = [
+    'asgiref==3.11.1',
+    'Django==6.0.4',
+    'django-environ==0.13.0',
+    'djangorestframework==3.17.1',
+    'psycopg2-binary==2.9.10',
+    'sqlparse==0.5.5',
+    'Pillow==11.0.0',
+    'whitenoise==6.12.0',
+    'requests==2.32.3',
+    'gunicorn==23.0.0',
+]
+
+[project.optional-dependencies]
+dev = [
+    'pytest==8.3.3',
+    'pytest-django==4.9.0',
+]
 
 [tool.setuptools]
 py-modules = []

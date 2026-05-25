@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import json
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
+from django.db.models import Sum
+from django.http import JsonResponse
 from django.contrib.auth.views import LoginView, LogoutView
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
@@ -14,7 +16,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from habits.forms import HabitForm, LoginForm, RegisterForm
-from habits.models import Achievement, Habit, HabitLog, UserAchievement, UserInsight
+from habits.models import Achievement, Habit, HabitLog, HabitSchedule, UserAchievement, UserInsight
 from habits.services.analytics import (
     completion_rate_for_habit,
     habit_completed_count,
@@ -61,13 +63,117 @@ def register_view(request):
     return render(request, 'auth/register.html', {'form': form})
 
 
+# ---------------------------------------------------------------------------
+# Pages.
+# ---------------------------------------------------------------------------
+
+
+def landing(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    return render(request, 'landing.html')
+
+
+@login_required
+def dashboard(request):
+    today: date = timezone.localdate()
+    now = timezone.localtime()
+    selected_date = _parse_anchor_date(request.GET.get('date'), today)
+    habits = list(
+        Habit.objects.filter(user=request.user, is_active=True).select_related('schedule').prefetch_related('tags')
+    )
+    selected_items = _day_habit_items(request.user, habits, selected_date, now)
+    timed_items = [item for item in selected_items if item['sort_time'] is not None]
+    untimed_items = [item for item in selected_items if item['sort_time'] is None]
+    logs_today = {log.habit_id: log for log in HabitLog.objects.filter(user=request.user, log_date=today)}
+    due_today = 0
+    done_today = 0
+    for habit in habits:
+        schedule = getattr(habit, 'schedule', None)
+        is_due = True if schedule is None else schedule.is_due_on(today)
+        log = logs_today.get(habit.id)
+        is_done = bool(log and log.status in {'done', 'partial'})
+        if is_due:
+            due_today += 1
+        if is_done:
+            done_today += 1
+
+    # Mini month calendar with intensity.
+    cal_start = selected_date.replace(day=1)
+    next_month = cal_start.replace(day=28) + timedelta(days=4)
+    cal_end = next_month - timedelta(days=next_month.day)
+    cal_logs = HabitLog.objects.filter(
+        user=request.user,
+        log_date__gte=cal_start,
+        log_date__lte=cal_end,
+        status__in=['done', 'partial'],
+    ).values_list('log_date', flat=True)
+    cal_active = set(cal_logs)
+    # Build an array of {date, in_month, has_activity, is_today}.
+    calendar_cells: list[dict] = []
+    # Pad to start on Monday.
+    start_offset = cal_start.isoweekday() - 1  # Mon=0
+    pad_start = cal_start - timedelta(days=start_offset)
+    cursor = pad_start
+    while cursor <= cal_end or cursor.isoweekday() != 1:
+        calendar_cells.append(
+            {
+                'date': cursor,
+                'in_month': cursor.month == selected_date.month,
+                'has_activity': cursor in cal_active,
+                'is_today': cursor == today,
+                'is_selected': cursor == selected_date,
+                'dashboard_url': f'{reverse("dashboard")}?date={cursor.isoformat()}',
+                'calendar_url': f'{reverse("calendar")}?view=day&date={cursor.isoformat()}',
+            }
+        )
+        cursor += timedelta(days=1)
+        if len(calendar_cells) >= 42:
+            break
+
+    # Weekly progress card. Use the current ISO week (Mon–Sun) for parity
+    # with the calendar page, and the expected-vs-done denominator from
+    # services.analytics so the rate isn't inflated to ~100% just because
+    # the user only ever logs successful completions.
+    week_start, week_end = _week_bounds(today)
+    week_progress = user_period_progress(request.user, week_start, week_end)
+
+    insights = UserInsight.objects.filter(user=request.user).order_by('-created_at')[:3]
+
+    add_form = HabitForm()
+
+    context = {
+        'today': today,
+        'habits': selected_items,
+        'timed_habits': timed_items,
+        'untimed_habits': untimed_items,
+        'selected_date': selected_date,
+        'selected_day_heading': _date_heading(selected_date, today),
+        'selected_is_today': selected_date == today,
+        'due_today': due_today,
+        'done_today': done_today,
+        'weekly_completion_rate': week_progress['rate'],
+        'wt_done': week_progress['done'],
+        'wt_total': max(week_progress['expected'], 1),
+        'wt_total_real': week_progress['expected'],
+        'calendar_cells': calendar_cells,
+        'calendar_month': selected_date,
+        'calendar_prev_month': (cal_start - timedelta(days=1)).replace(day=1),
+        'calendar_next_month': cal_end + timedelta(days=1),
+        'calendar_link': f'{reverse("calendar")}?view=month&date={selected_date.isoformat()}',
+        'insights': insights,
+        'add_form': add_form,
+        'habit_form_anchor': selected_date,
+    }
+    return render(request, 'dashboard.html', context)
+
 
 # ---------------------------------------------------------------------------
 # Calendar.
 # ---------------------------------------------------------------------------
 
 
-_CALENDAR_HOUR_RANGE = list(range(6, 24))  # 06:00 — 23:00
+_CALENDAR_HOUR_RANGE = list(range(0, 24))  # 00:00 — 23:00
 _WEEKDAY_LABELS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС']
 _RUSSIAN_MONTHS = [
     'Январь',
@@ -83,6 +189,45 @@ _RUSSIAN_MONTHS = [
     'Ноябрь',
     'Декабрь',
 ]
+
+
+def _day_habit_items(user, habits: list[Habit], target_day: date, now=None) -> list[dict]:
+    logs = {log.habit_id: log for log in HabitLog.objects.filter(user=user, log_date=target_day)}
+    items = []
+    check_time = now if target_day == timezone.localdate() else None
+    for habit in habits:
+        schedule = getattr(habit, 'schedule', None)
+        is_due = True if schedule is None else schedule.is_due_on(target_day)
+        if not is_due:
+            continue
+        is_active_now = True if schedule is None else bool(check_time and schedule.is_active_at(check_time))
+        log = logs.get(habit.id)
+        is_done = bool(log and log.status in {'done', 'partial'})
+        sort_time = schedule.window_start if schedule and schedule.window_start else None
+        items.append(
+            {
+                'habit': habit,
+                'is_due': is_due,
+                'is_active_now': is_active_now,
+                'is_done': is_done,
+                'today_status': log.status if log else None,
+                'log': log,
+                'sort_time': sort_time,
+                'time_label': (
+                    f'{schedule.window_start.strftime("%H:%M")}–{schedule.window_end.strftime("%H:%M")}'
+                    if schedule and schedule.has_window
+                    else 'Без времени'
+                ),
+            }
+        )
+    items.sort(key=lambda item: (item['sort_time'] is None, item['sort_time'] or time.max, item['habit'].title.lower()))
+    return items
+
+
+def _date_heading(target_day: date, today: date) -> str:
+    if target_day == today:
+        return 'Привычки на сегодня'
+    return f'Привычки на {target_day.day} {_RUSSIAN_MONTHS[target_day.month - 1].lower()}'
 
 
 def _parse_anchor_date(raw: str | None, fallback: date) -> date:
@@ -124,7 +269,6 @@ def calendar_view(request):
     view_mode = request.GET.get('view', 'week')
     if view_mode not in {'day', 'week', 'month'}:
         view_mode = 'week'
-
     habits = list(
         Habit.objects.filter(user=request.user, is_active=True).select_related('schedule').prefetch_related('tags')
     )
@@ -157,6 +301,19 @@ def calendar_view(request):
 
     def _pill_for(habit: Habit, day: date) -> dict | None:
         schedule = getattr(habit, 'schedule', None)
+        # Avoid projecting open-ended recurring habits indefinitely into
+        # future months. Existing unbounded schedules fall back to their
+        # start-date week; new schedules save explicit start/end bounds.
+        if schedule is None:
+            _, display_end = _week_bounds(getattr(habit, 'created_at', timezone.now()).date())
+            if day > display_end:
+                return None
+        elif schedule.end_date is None:
+            _, display_end = _week_bounds(schedule.start_date)
+            if day > display_end:
+                return None
+        if schedule and schedule.start_date and day < schedule.start_date:
+            return None
         if schedule and not schedule.is_due_on(day):
             return None
         log = log_lookup.get((habit.id, day))
@@ -280,5 +437,467 @@ def calendar_view(request):
         'wt_done': wt_done,
         'wt_total_real': wt_total_real,
         'add_form': HabitForm(),
+        'habit_form_anchor': anchor,
     }
     return render(request, 'calendar.html', context)
+
+
+@login_required
+@require_POST
+def habit_schedule_move(request, habit_id: int):
+    habit = get_object_or_404(Habit, id=habit_id, user=request.user)
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+        target_date = datetime.strptime(payload.get('date', ''), '%Y-%m-%d').date()
+        source_raw = payload.get('source_date')
+        source_date = datetime.strptime(source_raw, '%Y-%m-%d').date() if source_raw else target_date
+        hour_raw = payload.get('hour')
+        hour = int(hour_raw) if hour_raw not in (None, '') else None
+        clear_time = bool(payload.get('clear_time'))
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return JsonResponse({'detail': 'Некорректная дата или время.'}, status=400)
+    if hour is not None and (hour < _CALENDAR_HOUR_RANGE[0] or hour > _CALENDAR_HOUR_RANGE[-1]):
+        return JsonResponse({'detail': 'Время вне диапазона календаря.'}, status=400)
+
+    schedule, _ = HabitSchedule.objects.get_or_create(habit=habit)
+    if clear_time:
+        schedule.window_start = None
+        schedule.window_end = None
+        schedule.reminder_time = None
+    elif hour is not None:
+        target_time = time(hour=hour)
+        end_hour = min(hour + 1, 23)
+        schedule.window_start = target_time
+        schedule.window_end = time(hour=end_hour)
+        schedule.reminder_time = target_time
+    if clear_time and schedule.frequency_type == 'custom':
+        schedule.days_of_week = str(target_date.isoweekday())
+        schedule.start_date = target_date
+        schedule.end_date = target_date
+    elif clear_time and schedule.frequency_type == 'weekly':
+        schedule.days_of_week = str(target_date.isoweekday())
+        schedule.start_date, schedule.end_date = _week_bounds(target_date)
+    elif clear_time and (schedule.frequency_type != 'daily' or source_date.isoweekday() != target_date.isoweekday()):
+        schedule.frequency_type = 'weekly'
+        schedule.days_of_week = str(target_date.isoweekday())
+        schedule.start_date, schedule.end_date = _week_bounds(target_date)
+    elif clear_time:
+        schedule.start_date, schedule.end_date = _week_bounds(target_date)
+    elif hour is None and schedule.frequency_type == 'weekly':
+        schedule.days_of_week = str(target_date.isoweekday())
+        schedule.start_date, schedule.end_date = _week_bounds(target_date)
+    elif hour is None or schedule.frequency_type == 'custom':
+        schedule.frequency_type = 'custom'
+        schedule.days_of_week = str(target_date.isoweekday())
+        schedule.start_date = target_date
+        schedule.end_date = target_date
+    elif schedule.frequency_type != 'daily' or source_date.isoweekday() != target_date.isoweekday():
+        schedule.frequency_type = 'weekly'
+        schedule.days_of_week = str(target_date.isoweekday())
+        schedule.start_date, schedule.end_date = _week_bounds(target_date)
+    else:
+        schedule.start_date, schedule.end_date = _week_bounds(target_date)
+    schedule.save(update_fields=[
+        'frequency_type',
+        'days_of_week',
+        'start_date',
+        'end_date',
+        'window_start',
+        'window_end',
+        'reminder_time',
+    ])
+    return JsonResponse({
+        'detail': 'ok',
+        'habit_id': habit.id,
+        'date': target_date.isoformat(),
+        'hour': hour,
+        'time_label': f'{hour:02d}:00' if hour is not None else '',
+        'frequency_type': schedule.frequency_type,
+        'days_of_week': schedule.days_of_week,
+    })
+
+
+@login_required
+@require_POST
+def habit_create(request):
+    form = HabitForm(request.POST)
+    if form.is_valid():
+        form.save(user=request.user)
+        messages.success(request, 'Привычка создана. Вперёд к серии!')
+    else:
+        errors = '; '.join(msg for msgs in form.errors.values() for msg in msgs)
+        messages.error(request, f'Не удалось создать привычку: {errors}')
+    return redirect(_safe_next(request))
+
+
+@login_required
+def habit_edit(request, habit_id: int):
+    habit = get_object_or_404(Habit, id=habit_id, user=request.user)
+    if request.method == 'POST':
+        form = HabitForm(request.POST, instance=habit)
+        if form.is_valid():
+            form.save(user=request.user)
+            messages.success(request, f'Привычка "{habit.title}" обновлена.')
+            return redirect('habit_detail', habit_id=habit.id)
+        errors = '; '.join(msg for msgs in form.errors.values() for msg in msgs)
+        messages.error(request, f'Не удалось обновить привычку: {errors}')
+    else:
+        form = HabitForm(instance=habit)
+    return render(request, 'habit_form.html', {'form': form, 'habit': habit, 'mode': 'edit'})
+
+
+_STATUS_LABELS = {
+    'done': 'выполнено',
+    'partial': 'частично',
+    'skipped': 'пропущено',
+}
+
+
+def _undo_extra_tags(url: str, label: str = 'Отменить') -> str:
+    """Encode an undo action for a flash toast (parsed by base.html JS)."""
+    return json.dumps({'undo': url, 'label': label}, ensure_ascii=False)
+
+
+def _safe_next(request, fallback: str = 'dashboard') -> str:
+    """Return a same-origin ``next`` URL or fall back to a named route.
+
+    ``next`` is propagated through hidden form inputs in many templates; an
+    attacker could craft a link with ``?next=https://evil.example`` and a
+    successful POST would redirect there. ``url_has_allowed_host_and_scheme``
+    guards against that classic open-redirect pattern.
+    """
+    raw = request.POST.get('next') or request.GET.get('next')
+    if raw and url_has_allowed_host_and_scheme(
+        raw, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        return raw
+    return fallback
+
+
+@login_required
+@require_POST
+def habit_log_today(request, habit_id: int):
+    habit = get_object_or_404(Habit, id=habit_id, user=request.user)
+    target_day = _parse_anchor_date(request.POST.get('log_date'), timezone.localdate())
+    status = request.POST.get('status', 'done')
+    if status not in {'done', 'partial', 'skipped'}:
+        status = 'done'
+    try:
+        duration = max(int(request.POST.get('duration_minutes') or 0), 0)
+    except (TypeError, ValueError):
+        duration = 0
+    note = request.POST.get('note', '')
+    HabitLog.objects.update_or_create(
+        habit=habit,
+        log_date=target_day,
+        defaults={
+            'user': request.user,
+            'status': status,
+            'value': duration if habit.target_type == 'minutes' else habit.target_value,
+            'duration_minutes': duration,
+            'note': note,
+        },
+    )
+    label = _STATUS_LABELS.get(status, status)
+    messages.success(
+        request,
+        f'Отметка для "{habit.title}" — {label}.',
+        extra_tags=_undo_extra_tags(reverse('habit_log_undo', args=[habit.id]), 'Отменить'),
+    )
+    return redirect(_safe_next(request))
+
+
+@login_required
+@require_POST
+def habit_log_undo(request, habit_id: int):
+    habit = get_object_or_404(Habit, id=habit_id, user=request.user)
+    target_day = _parse_anchor_date(request.POST.get('log_date'), timezone.localdate())
+    deleted, _ = HabitLog.objects.filter(habit=habit, user=request.user, log_date=target_day).delete()
+    if deleted:
+        # The post_delete signal recomputes current_streak / best_streak for us
+        # so the dashboard pill stays accurate.
+        messages.success(request, f'Отметка для "{habit.title}" снята.')
+    else:
+        messages.info(request, f'У "{habit.title}" сегодня и так не было отметки.')
+    return redirect(_safe_next(request))
+
+
+@login_required
+@require_POST
+def habit_delete(request, habit_id: int):
+    habit = get_object_or_404(Habit, id=habit_id, user=request.user)
+    habit.is_active = False
+    habit.save(update_fields=['is_active', 'updated_at'])
+    messages.success(
+        request,
+        f'Привычка "{habit.title}" архивирована.',
+        extra_tags=_undo_extra_tags(reverse('habit_restore', args=[habit.id]), 'Вернуть'),
+    )
+    return redirect(_safe_next(request))
+
+
+@login_required
+@require_POST
+def habit_restore(request, habit_id: int):
+    habit = get_object_or_404(Habit, id=habit_id, user=request.user)
+    habit.is_active = True
+    habit.save(update_fields=['is_active', 'updated_at'])
+    messages.success(request, f'Привычка "{habit.title}" возвращена в активные.')
+    return redirect(_safe_next(request))
+
+
+@login_required
+@require_POST
+def habit_destroy(request, habit_id: int):
+    habit = get_object_or_404(Habit, id=habit_id, user=request.user)
+    title = habit.title
+    habit.delete()
+    messages.success(request, f'Привычка "{title}" удалена безвозвратно.')
+    return redirect(_safe_next(request))
+
+
+@login_required
+def habit_archive_list(request):
+    archived = (
+        Habit.objects.filter(user=request.user, is_active=False)
+        .select_related('schedule')
+        .prefetch_related('tags')
+        .order_by('-updated_at')
+    )
+    items: list[dict] = []
+    for habit in archived:
+        items.append(
+            {
+                'habit': habit,
+                'completed_count': habit_completed_count(habit),
+                'total_minutes': habit_total_minutes(habit),
+            }
+        )
+    return render(request, 'habits_archive.html', {'items': items})
+
+
+@login_required
+def habit_detail(request, habit_id: int):
+    habit = get_object_or_404(Habit, id=habit_id, user=request.user)
+    today = timezone.localdate()
+    today_log = habit.logs.filter(log_date=today).first()
+
+    # Heatmap covering last 90 days, organised into 13 weekly columns of 7 cells.
+    heatmap = habit_heatmap(habit, days=91)
+    # Group into rows by weekday.
+    by_weekday: list[list[dict]] = [[], [], [], [], [], [], []]
+    for cell in heatmap:
+        by_weekday[cell['date'].isoweekday() - 1].append(cell)
+
+    # Last 7 days intensity (Mon..Sun bar chart on the detail page).
+    last7_logs = habit.logs.filter(log_date__gte=today - timedelta(days=6))
+    weekday_minutes = [0] * 7
+    for log in last7_logs:
+        if log.status in {'done', 'partial'}:
+            idx = log.log_date.isoweekday() - 1
+            weekday_minutes[idx] += log.duration_minutes or habit.target_value or 1
+    max_min = max(weekday_minutes) or 1
+    intensity_bars = [
+        {
+            'label': label,
+            'minutes': mins,
+            'pct': max(int(100 * mins / max_min), 8 if mins else 4),
+        }
+        for label, mins in zip(['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'], weekday_minutes)
+    ]
+
+    history = habit.logs.order_by('-log_date')[:8]
+
+    # Hour-of-day distribution — "когда я обычно это делаю" over last 90 days.
+    hour_dist = habit_hour_distribution(habit, days=90)
+    max_hour_count = max(hour_dist['hours']) or 1
+    peak_hour = hour_dist['peak_hour']
+    best_window = hour_dist['best_window']
+    hour_bars = [
+        {
+            'hour': h,
+            'count': cnt,
+            # Reserve a tiny min height for non-empty hours so single logs
+            # are still visible on the chart.
+            'pct': max(int(100 * cnt / max_hour_count), 6 if cnt else 0),
+            'is_peak': (peak_hour is not None and h == peak_hour),
+            'in_window': (
+                best_window is not None
+                and (
+                    (best_window['start'] <= best_window['end_exclusive'] and best_window['start'] <= h < best_window['end_exclusive'])
+                    or (best_window['start'] > best_window['end_exclusive'] and (h >= best_window['start'] or h < best_window['end_exclusive']))
+                )
+            ),
+            'bg': hour_dist['hour_bg'][h],
+            'label': f'{h:02d}:00',
+        }
+        for h, cnt in enumerate(hour_dist['hours'])
+    ]
+    peak_hour_label = f'{peak_hour:02d}:00' if peak_hour is not None else None
+
+    context = {
+        'habit': habit,
+        'today_log': today_log,
+        'today': today,
+        'completion_pct_30': completion_rate_for_habit(habit, days=30),
+        'completion_pct_90': completion_rate_for_habit(habit, days=90),
+        'total_minutes': habit_total_minutes(habit),
+        'completed_count': habit_completed_count(habit),
+        'current_streak': habit_current_streak(habit),
+        'best_streak': habit_best_streak(habit),
+        'heatmap_rows': by_weekday,
+        'intensity_bars': intensity_bars,
+        'history': history,
+        'hour_bars': hour_bars,
+        'hour_buckets': hour_dist['buckets'],
+        'peak_hour_label': peak_hour_label,
+        'peak_bucket': hour_dist['peak_bucket'],
+        'hour_total': hour_dist['total'],
+        'best_window': best_window,
+    }
+    return render(request, 'habit_detail.html', context)
+
+
+@login_required
+def analytics(request):
+    period = request.GET.get('period', 'month')
+    days = {'week': 7, 'month': 30, 'year': 365}.get(period, 30)
+    activity = user_activity_per_day(request.user, days=days)
+    best_days = user_best_days(request.user, days=days)
+    breakdown = user_category_breakdown(request.user, days=days)
+    insights = UserInsight.objects.filter(user=request.user).order_by('-created_at')[:5]
+    achievements = Achievement.objects.all()
+    unlocked_ids = set(UserAchievement.objects.filter(user=request.user).values_list('achievement_id', flat=True))
+    completion_total = HabitLog.objects.filter(user=request.user, status__in=['done', 'partial']).count()
+    total_minutes = HabitLog.objects.filter(user=request.user, status__in=['done', 'partial']).aggregate(
+        total=Sum('duration_minutes')
+    )['total'] or 0
+    profile = request.user.profile
+    # Map condition_type → Tailwind colour pair. The template can't compute
+    # this dynamically because Tailwind's JIT only emits classes it sees as
+    # literal strings — interpolating "bg-{{type}}-100" produced invalid
+    # classes like `bg-streak-100` that silently fall back to no colour.
+    _BADGE_PALETTE = {
+        'streak': ('bg-orange-100', 'text-orange-600'),
+        'completion_count': ('bg-green-100', 'text-green-600'),
+        'total_time': ('bg-blue-100', 'text-blue-600'),
+        'xp': ('bg-purple-100', 'text-purple-600'),
+        'custom': ('bg-amber-100', 'text-amber-600'),
+    }
+    achievements_data = []
+    for a in achievements:
+        bg, fg = _BADGE_PALETTE.get(a.condition_type, ('bg-green-100', 'text-green-600'))
+        if a.condition_type == 'streak':
+            current_value = profile.best_streak
+            condition_label = f'Серия {a.condition_value} дн.'
+        elif a.condition_type == 'completion_count':
+            current_value = completion_total
+            condition_label = f'{a.condition_value} выполнений'
+        elif a.condition_type == 'total_time':
+            current_value = total_minutes
+            condition_label = f'{a.condition_value} минут'
+        elif a.condition_type == 'xp':
+            current_value = profile.level
+            condition_label = f'Уровень {a.condition_value}'
+        else:
+            current_value = 1 if a.id in unlocked_ids else 0
+            condition_label = a.get_condition_type_display()
+        progress_pct = min(int(100 * current_value / a.condition_value), 100) if a.condition_value else 0
+        unlocked = a.id in unlocked_ids
+        achievements_data.append(
+            {
+                'achievement': a,
+                'unlocked': unlocked,
+                'is_close': (not unlocked and progress_pct >= 70),
+                'current_value': current_value,
+                'condition_label': condition_label,
+                'progress_pct': progress_pct,
+                'status_label': 'Получено' if unlocked else ('Близко' if progress_pct >= 70 else 'Не получено'),
+                'badge_bg': bg,
+                'badge_fg': fg,
+            }
+        )
+    unlocked_achievements = [entry for entry in achievements_data if entry['unlocked']]
+    close_achievements = [entry for entry in achievements_data if entry['is_close']]
+    locked_achievements = [entry for entry in achievements_data if not entry['unlocked'] and not entry['is_close']]
+    # Average completion rate. Naively averaging each weekday's percentage
+    # double-counts days where the user has no due habits at all (rate=0
+    # because expected=0) and silently drags the headline number down. Weight
+    # the average by the actual number of expected slots instead.
+    total_expected = sum(b['expected'] for b in best_days)
+    total_done = sum(b['done'] for b in best_days)
+    avg = min(int(100 * total_done / total_expected), 100) if total_expected else 0
+
+    # Donut chart needs cumulative offsets.
+    chart_categories = []
+    cumulative = 0
+    palette = ['#4CAF50', '#FFB74D', '#64B5F6', '#BA68C8', '#FF8A65', '#F06292']
+    for idx, row in enumerate(breakdown):
+        chart_categories.append(
+            {
+                **row,
+                'color': palette[idx % len(palette)],
+                'offset': cumulative,
+            }
+        )
+        cumulative += row['pct']
+
+    # Find best/weak day for the highlight card.
+    best_day = best_days[0] if best_days else None
+    active_days = sum(1 for row in activity if row['count'] > 0)
+    # "Morning %" — share of successful logs created before local-noon. We have
+    # to compute the hour in the user's timezone in Python because Django's
+    # ``__hour`` ORM lookup extracts in the database's connection timezone
+    # (UTC), which on a Europe/Moscow site shifts "morning" by +3h.
+    recent_done_logs = HabitLog.objects.filter(
+        user=request.user,
+        status__in=['done', 'partial'],
+        log_date__gte=timezone.localdate() - timedelta(days=days - 1),
+    ).only('created_at')
+    total_done = 0
+    morning_done = 0
+    for log in recent_done_logs:
+        total_done += 1
+        if timezone.localtime(log.created_at).hour < 12:
+            morning_done += 1
+    morning_pct = int(100 * morning_done / total_done) if total_done else 0
+
+    # Build chart bars (downsample if too many).
+    max_count = max((row['count'] for row in activity), default=0) or 1
+    chart_bars = [
+        {
+            'date': row['date'],
+            'count': row['count'],
+            'height_pct': max(int(100 * row['count'] / max_count), 3 if row['count'] else 0),
+        }
+        for row in activity
+    ]
+
+    # Habit pair correlations — only meaningful on the month/year periods
+    # where the user has enough history. Skip on the 7-day view.
+    correlations = []
+    if days >= 14:
+        correlations = user_habit_correlations(request.user, days=days)
+
+    context = {
+        'period': period,
+        'days': days,
+        'activity': activity,
+        'chart_bars': chart_bars,
+        'best_days': best_days,
+        'breakdown': breakdown,
+        'chart_categories': chart_categories,
+        'achievements_data': achievements_data,
+        'unlocked_achievements': unlocked_achievements,
+        'close_achievements': close_achievements,
+        'locked_achievements': locked_achievements,
+        'insights': insights,
+        'best_day': best_day,
+        'avg_completion': avg,
+        'active_days': active_days,
+        'total_done': total_done,
+        'total_expected': total_expected,
+        'morning_pct': morning_pct,
+        'correlations': correlations,
+    }
+    return render(request, 'analytics.html', context)
