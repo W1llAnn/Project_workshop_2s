@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 import json
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
 from django.contrib.auth.views import LoginView, LogoutView
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
@@ -14,7 +15,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from habits.forms import HabitForm, LoginForm, RegisterForm
-from habits.models import Achievement, Habit, HabitLog, UserAchievement, UserInsight
+from habits.models import Achievement, Habit, HabitLog, HabitSchedule, UserAchievement, UserInsight
 from habits.services.analytics import (
     completion_rate_for_habit,
     habit_completed_count,
@@ -382,6 +383,42 @@ def calendar_view(request):
         'add_form': HabitForm(),
     }
     return render(request, 'calendar.html', context)
+
+
+@login_required
+@require_POST
+def habit_schedule_move(request, habit_id: int):
+    habit = get_object_or_404(Habit, id=habit_id, user=request.user)
+    try:
+        payload = json.loads(request.body.decode('utf-8') or '{}')
+        target_date = datetime.strptime(payload.get('date', ''), '%Y-%m-%d').date()
+        source_raw = payload.get('source_date')
+        source_date = datetime.strptime(source_raw, '%Y-%m-%d').date() if source_raw else target_date
+        hour = int(payload.get('hour'))
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return JsonResponse({'detail': 'Некорректная дата или время.'}, status=400)
+    if hour < _CALENDAR_HOUR_RANGE[0] or hour > _CALENDAR_HOUR_RANGE[-1]:
+        return JsonResponse({'detail': 'Время вне диапазона календаря.'}, status=400)
+
+    schedule, _ = HabitSchedule.objects.get_or_create(habit=habit)
+    target_time = time(hour=hour)
+    end_hour = min(hour + 1, 23)
+    schedule.window_start = target_time
+    schedule.window_end = time(hour=end_hour)
+    schedule.reminder_time = target_time
+    if schedule.frequency_type != 'daily' or source_date.isoweekday() != target_date.isoweekday():
+        schedule.frequency_type = 'weekly'
+        schedule.days_of_week = str(target_date.isoweekday())
+    schedule.save(update_fields=['frequency_type', 'days_of_week', 'window_start', 'window_end', 'reminder_time'])
+    return JsonResponse({
+        'detail': 'ok',
+        'habit_id': habit.id,
+        'date': target_date.isoformat(),
+        'hour': hour,
+        'time_label': f'{hour:02d}:00',
+        'frequency_type': schedule.frequency_type,
+        'days_of_week': schedule.days_of_week,
+    })
 
 
 @login_required
