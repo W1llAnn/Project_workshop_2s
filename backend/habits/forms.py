@@ -56,6 +56,7 @@ class HabitForm(forms.ModelForm):
     duration_minutes = forms.IntegerField(min_value=0, max_value=600, required=False, initial=15)
     frequency_type = forms.ChoiceField(choices=FREQUENCY_CHOICES, initial='daily')
     days_of_week = forms.CharField(required=False, initial='1,2,3,4,5,6,7')
+    schedule_anchor_date = forms.DateField(required=False)
     reminder_time = forms.TimeField(required=False)
     # Optional time-of-day window (e.g. 13:00..14:00). Both blank => all-day.
     window_start = forms.TimeField(required=False, widget=forms.TimeInput(attrs={'type': 'time'}))
@@ -110,13 +111,13 @@ class HabitForm(forms.ModelForm):
         sched.reminder_time = self.cleaned_data.get('reminder_time') or None
         sched.window_start = self.cleaned_data.get('window_start') or None
         sched.window_end = self.cleaned_data.get('window_end') or None
-        today = timezone.localdate()
+        anchor_date = self.cleaned_data.get('schedule_anchor_date') or timezone.localdate()
         if sched.frequency_type == 'custom':
-            sched.start_date = today
-            sched.end_date = today
-            sched.days_of_week = str(today.isoweekday())
+            sched.start_date = anchor_date
+            sched.end_date = anchor_date
+            sched.days_of_week = str(anchor_date.isoweekday())
         else:
-            sched.start_date, sched.end_date = _week_bounds(today)
+            sched.start_date, sched.end_date = _week_bounds(anchor_date)
         sched.save()
         # Tags by name (find or create).
         names_raw = self.cleaned_data.get('tag_names', '') or ''

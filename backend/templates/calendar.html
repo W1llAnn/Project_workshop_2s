@@ -138,7 +138,7 @@
        class="text-sm text-green-700 hover:underline {% if anchor == today %}invisible{% endif %}">
       <i class="fas fa-rotate-left mr-1"></i>Сегодня
     </a>
-    <button onclick="document.querySelector('[data-modal=add]').classList.add('open')"
+    <button onclick="window.openHabitModal ? window.openHabitModal('{{ anchor|date:'Y-m-d' }}') : document.querySelector('[data-modal=add]').classList.add('open')"
             class="px-4 py-2 bg-green-500 text-white rounded-xl font-semibold hover:bg-green-600 flex items-center gap-2">
       <i class="fas fa-plus"></i> Новая привычка
     </button>
@@ -303,7 +303,7 @@
 </div>
 
 <!-- Floating "+" FAB -->
-<button onclick="document.querySelector('[data-modal=add]').classList.add('open')"
+<button onclick="window.openHabitModal ? window.openHabitModal('{{ anchor|date:'Y-m-d' }}') : document.querySelector('[data-modal=add]').classList.add('open')"
         class="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-lg flex items-center justify-center text-xl z-30 md:right-10 md:bottom-10"
         title="Новая привычка">
   <i class="fas fa-plus"></i>
@@ -322,7 +322,13 @@
       const winEnd   = modal.querySelector('input[name=window_end]');
       const titleInput = modal.querySelector('input[name=title]');
       const hh = (h) => String(h).padStart(2, '0') + ':00';
-      const openModal = () => {
+      const anchorInput = modal.querySelector('input[name=schedule_anchor_date]');
+      const openModal = (dateValue) => {
+        if (anchorInput && dateValue) anchorInput.value = dateValue;
+        if (window.openHabitModal) {
+          window.openHabitModal(dateValue);
+          return;
+        }
         modal.classList.add('open');
         if (titleInput) setTimeout(() => titleInput.focus(), 50);
       };
@@ -336,7 +342,7 @@
             if (winStart) winStart.value = hh(h);
             if (winEnd)   winEnd.value   = hh(Math.min(h + 1, 23));
           }
-          openModal();
+          openModal(slot.dataset.date);
         });
       });
 
@@ -344,7 +350,7 @@
         cell.addEventListener('click', (e) => {
           if (e.target.closest('a.mini-pill')) return;
           // Month view doesn't carry an hour — leave window_* alone.
-          openModal();
+          openModal(cell.dataset.date);
         });
       });
 

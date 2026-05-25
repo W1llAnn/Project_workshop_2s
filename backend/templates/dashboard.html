@@ -60,7 +60,7 @@
         {% endif %}
       </div>
     </div>
-    <button onclick="document.querySelector('[data-modal=add]').classList.add('open')" class="px-4 py-2 bg-green-500 text-white rounded-xl font-semibold hover:bg-green-600 flex items-center gap-2">
+    <button onclick="window.openHabitModal ? window.openHabitModal('{{ selected_date|date:'Y-m-d' }}') : document.querySelector('[data-modal=add]').classList.add('open')" class="px-4 py-2 bg-green-500 text-white rounded-xl font-semibold hover:bg-green-600 flex items-center gap-2">
       <i class="fas fa-plus"></i> Новая привычка
     </button>
   </div>
@@ -106,7 +106,26 @@
 <!-- Habits list + mini calendar -->
 <div class="grid lg:grid-cols-3 gap-6">
   <div class="lg:col-span-2 space-y-4">
-    <h2 class="text-lg font-bold">Привычки на сегодня</h2>
+    <div class="flex items-center justify-between gap-3">
+      <h2 class="text-lg font-bold">{{ selected_day_heading }}</h2>
+      <a href="{% url 'calendar' %}?view=day&date={{ selected_date|date:'Y-m-d' }}" class="text-xs text-green-700 font-semibold hover:text-green-800 inline-flex items-center gap-1.5">
+        <i class="fas fa-calendar-days"></i> Открыть в календаре
+      </a>
+    </div>
+    {% if timed_habits or untimed_habits %}
+      <div class="flex flex-wrap gap-2 text-xs text-gray-500">
+        {% if timed_habits %}
+          <span class="px-2.5 py-1 rounded-full bg-green-50 text-green-700 font-semibold">
+            <i class="fas fa-clock mr-1"></i>По времени: {{ timed_habits|length }}
+          </span>
+        {% endif %}
+        {% if untimed_habits %}
+          <span class="px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 font-semibold">
+            Без времени: {{ untimed_habits|length }}
+          </span>
+        {% endif %}
+      </div>
+    {% endif %}
     <div class="space-y-3 stagger">
     {% for item in habits %}
       <div class="glass-card habit-card p-4 flex items-center gap-4 lift">
@@ -122,6 +141,8 @@
               {% endif %}
             </div>
             <div class="text-xs text-gray-500 mt-0.5 truncate">
+              <span class="font-semibold text-gray-700">{{ item.time_label }}</span>
+              •
               {% if item.habit.target_type == 'minutes' %}{{ item.habit.target_value }} мин •{% endif %}
               {{ item.habit.get_target_unit_display }}
               {% if item.habit.schedule %} • {% if item.habit.schedule.frequency_type == 'custom' %}Сегодня{% else %}{{ item.habit.schedule.get_frequency_type_display }}{% endif %}{% endif %}
@@ -141,6 +162,7 @@
         {% if item.today_status == 'done' %}
           <form method="post" action="{% url 'habit_log_undo' item.habit.id %}">
             {% csrf_token %}
+            <input type="hidden" name="log_date" value="{{ selected_date|date:'Y-m-d' }}">
             <button title="Снять отметку"
                     class="group px-4 py-2 bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-700 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-colors">
               <i class="fas fa-check-circle group-hover:hidden"></i>
@@ -152,6 +174,7 @@
         {% elif item.today_status == 'partial' %}
           <form method="post" action="{% url 'habit_log_undo' item.habit.id %}">
             {% csrf_token %}
+            <input type="hidden" name="log_date" value="{{ selected_date|date:'Y-m-d' }}">
             <button title="Снять отметку"
                     class="group px-4 py-2 bg-yellow-100 text-yellow-700 hover:bg-red-100 hover:text-red-700 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-colors">
               <i class="fas fa-percent group-hover:hidden"></i>
@@ -163,6 +186,7 @@
         {% elif item.today_status == 'skipped' %}
           <form method="post" action="{% url 'habit_log_undo' item.habit.id %}">
             {% csrf_token %}
+            <input type="hidden" name="log_date" value="{{ selected_date|date:'Y-m-d' }}">
             <button title="Снять отметку"
                     class="group px-4 py-2 bg-gray-100 text-gray-700 hover:bg-red-100 hover:text-red-700 rounded-lg text-sm font-semibold flex items-center gap-1.5 transition-colors">
               <i class="fas fa-circle-minus group-hover:hidden"></i>
@@ -175,6 +199,7 @@
           <div class="flex items-center gap-1">
             <form method="post" action="{% url 'habit_log_today' item.habit.id %}">
               {% csrf_token %}
+              <input type="hidden" name="log_date" value="{{ selected_date|date:'Y-m-d' }}">
               <input type="hidden" name="status" value="done">
               <input type="hidden" name="duration_minutes" value="{{ item.habit.target_value }}">
               <button title="Выполнено"
@@ -184,6 +209,7 @@
             </form>
             <form method="post" action="{% url 'habit_log_today' item.habit.id %}">
               {% csrf_token %}
+              <input type="hidden" name="log_date" value="{{ selected_date|date:'Y-m-d' }}">
               <input type="hidden" name="status" value="skipped">
               <button title="Осознанно пропустить"
                       class="px-3 py-2 bg-white text-gray-500 border border-gray-200 rounded-r-lg text-sm font-semibold hover:bg-gray-50">
@@ -196,9 +222,9 @@
     {% empty %}
       <div class="glass-card p-8 text-center anim-pop">
         <img src="{% static 'img/mascot_alt.png' %}" class="w-24 h-24 mx-auto opacity-90 mascot-bob" alt="">
-        <h3 class="font-bold text-lg mt-4">Ещё нет привычек</h3>
-        <p class="text-sm text-gray-500 mt-1">Начни с одной маленькой — например, выпить стакан воды утром.</p>
-        <button onclick="document.querySelector('[data-modal=add]').classList.add('open')" class="mt-4 px-5 py-2.5 bg-green-500 text-white rounded-xl font-semibold hover:bg-green-600">
+        <h3 class="font-bold text-lg mt-4">На этот день привычек нет</h3>
+        <p class="text-sm text-gray-500 mt-1">Выбери другую дату или создай привычку для этого дня.</p>
+        <button onclick="window.openHabitModal ? window.openHabitModal('{{ selected_date|date:'Y-m-d' }}') : document.querySelector('[data-modal=add]').classList.add('open')" class="mt-4 px-5 py-2.5 bg-green-500 text-white rounded-xl font-semibold hover:bg-green-600">
           <i class="fas fa-plus mr-1"></i> Создать привычку
         </button>
       </div>
@@ -241,10 +267,13 @@
   <aside id="calendar" class="scroll-mt-20 stagger">
     <div class="glass-card p-4">
       <div class="flex items-center justify-between mb-3">
-        <h3 class="text-lg font-bold font-display">{{ calendar_month|date:"F Y"|capfirst }}</h3>
+        <a href="{{ calendar_link }}" class="text-lg font-bold font-display hover:text-green-700 transition" title="Открыть полный календарь">
+          {{ calendar_month|date:"F Y"|capfirst }}
+        </a>
         <div class="flex items-center gap-1 text-gray-400">
-          <button class="w-7 h-7 rounded-lg hover:bg-gray-100"><i class="fas fa-chevron-left text-xs"></i></button>
-          <button class="w-7 h-7 rounded-lg hover:bg-gray-100"><i class="fas fa-chevron-right text-xs"></i></button>
+          <a href="{% url 'dashboard' %}?date={{ calendar_prev_month|date:'Y-m-d' }}" class="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center"><i class="fas fa-chevron-left text-xs"></i></a>
+          <a href="{{ calendar_link }}" class="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center" title="Полный календарь"><i class="fas fa-up-right-from-square text-[10px]"></i></a>
+          <a href="{% url 'dashboard' %}?date={{ calendar_next_month|date:'Y-m-d' }}" class="w-7 h-7 rounded-lg hover:bg-gray-100 flex items-center justify-center"><i class="fas fa-chevron-right text-xs"></i></a>
         </div>
       </div>
       <div class="grid grid-cols-7 gap-1 text-xs text-center">
@@ -252,13 +281,14 @@
         <div class="text-gray-400">Чт</div><div class="text-gray-400">Пт</div><div class="text-gray-400">Сб</div>
         <div class="text-gray-400">Вс</div>
         {% for cell in calendar_cells %}
-          <div class="aspect-square flex items-center justify-center rounded-lg text-xs
-              {% if cell.is_today %}bg-green-500 text-white font-bold
-              {% elif cell.has_activity and cell.in_month %}bg-green-100 text-green-700 font-semibold
+          <a href="{{ cell.dashboard_url }}" class="aspect-square flex items-center justify-center rounded-lg text-xs transition hover:bg-green-50
+              {% if cell.is_selected %}ring-2 ring-green-500 bg-green-500 text-white font-bold
+              {% elif cell.is_today %}bg-green-100 text-green-700 font-bold
+              {% elif cell.has_activity and cell.in_month %}bg-green-50 text-green-700 font-semibold
               {% elif cell.in_month %}text-gray-700
               {% else %}text-gray-300{% endif %}">
             {{ cell.date.day }}
-          </div>
+          </a>
         {% endfor %}
       </div>
     </div>

@@ -77,36 +77,28 @@ def landing(request):
 def dashboard(request):
     today: date = timezone.localdate()
     now = timezone.localtime()
+    selected_date = _parse_anchor_date(request.GET.get('date'), today)
     habits = list(
         Habit.objects.filter(user=request.user, is_active=True).select_related('schedule').prefetch_related('tags')
     )
+    selected_items = _day_habit_items(request.user, habits, selected_date, now)
+    timed_items = [item for item in selected_items if item['sort_time'] is not None]
+    untimed_items = [item for item in selected_items if item['sort_time'] is None]
     logs_today = {log.habit_id: log for log in HabitLog.objects.filter(user=request.user, log_date=today)}
-    items = []
     due_today = 0
     done_today = 0
     for habit in habits:
         schedule = getattr(habit, 'schedule', None)
         is_due = True if schedule is None else schedule.is_due_on(today)
-        is_active_now = True if schedule is None else schedule.is_active_at(now)
         log = logs_today.get(habit.id)
         is_done = bool(log and log.status in {'done', 'partial'})
         if is_due:
             due_today += 1
         if is_done:
             done_today += 1
-        items.append(
-            {
-                'habit': habit,
-                'is_due': is_due,
-                'is_active_now': is_active_now,
-                'is_done': is_done,
-                'today_status': log.status if log else None,
-                'log': log,
-            }
-        )
 
     # Mini month calendar with intensity.
-    cal_start = today.replace(day=1)
+    cal_start = selected_date.replace(day=1)
     next_month = cal_start.replace(day=28) + timedelta(days=4)
     cal_end = next_month - timedelta(days=next_month.day)
     cal_logs = HabitLog.objects.filter(
@@ -126,9 +118,12 @@ def dashboard(request):
         calendar_cells.append(
             {
                 'date': cursor,
-                'in_month': cursor.month == today.month,
+                'in_month': cursor.month == selected_date.month,
                 'has_activity': cursor in cal_active,
                 'is_today': cursor == today,
+                'is_selected': cursor == selected_date,
+                'dashboard_url': f'{reverse("dashboard")}?date={cursor.isoformat()}',
+                'calendar_url': f'{reverse("calendar")}?view=day&date={cursor.isoformat()}',
             }
         )
         cursor += timedelta(days=1)
@@ -148,7 +143,12 @@ def dashboard(request):
 
     context = {
         'today': today,
-        'habits': items,
+        'habits': selected_items,
+        'timed_habits': timed_items,
+        'untimed_habits': untimed_items,
+        'selected_date': selected_date,
+        'selected_day_heading': _date_heading(selected_date, today),
+        'selected_is_today': selected_date == today,
         'due_today': due_today,
         'done_today': done_today,
         'weekly_completion_rate': week_progress['rate'],
@@ -156,9 +156,13 @@ def dashboard(request):
         'wt_total': max(week_progress['expected'], 1),
         'wt_total_real': week_progress['expected'],
         'calendar_cells': calendar_cells,
-        'calendar_month': today,
+        'calendar_month': selected_date,
+        'calendar_prev_month': (cal_start - timedelta(days=1)).replace(day=1),
+        'calendar_next_month': cal_end + timedelta(days=1),
+        'calendar_link': f'{reverse("calendar")}?view=month&date={selected_date.isoformat()}',
         'insights': insights,
         'add_form': add_form,
+        'habit_form_anchor': selected_date,
     }
     return render(request, 'dashboard.html', context)
 
@@ -184,6 +188,45 @@ _RUSSIAN_MONTHS = [
     'Ноябрь',
     'Декабрь',
 ]
+
+
+def _day_habit_items(user, habits: list[Habit], target_day: date, now=None) -> list[dict]:
+    logs = {log.habit_id: log for log in HabitLog.objects.filter(user=user, log_date=target_day)}
+    items = []
+    check_time = now if target_day == timezone.localdate() else None
+    for habit in habits:
+        schedule = getattr(habit, 'schedule', None)
+        is_due = True if schedule is None else schedule.is_due_on(target_day)
+        if not is_due:
+            continue
+        is_active_now = True if schedule is None else bool(check_time and schedule.is_active_at(check_time))
+        log = logs.get(habit.id)
+        is_done = bool(log and log.status in {'done', 'partial'})
+        sort_time = schedule.window_start if schedule and schedule.window_start else None
+        items.append(
+            {
+                'habit': habit,
+                'is_due': is_due,
+                'is_active_now': is_active_now,
+                'is_done': is_done,
+                'today_status': log.status if log else None,
+                'log': log,
+                'sort_time': sort_time,
+                'time_label': (
+                    f'{schedule.window_start.strftime("%H:%M")}–{schedule.window_end.strftime("%H:%M")}'
+                    if schedule and schedule.has_window
+                    else 'Без времени'
+                ),
+            }
+        )
+    items.sort(key=lambda item: (item['sort_time'] is None, item['sort_time'] or time.max, item['habit'].title.lower()))
+    return items
+
+
+def _date_heading(target_day: date, today: date) -> str:
+    if target_day == today:
+        return 'Привычки на сегодня'
+    return f'Привычки на {target_day.day} {_RUSSIAN_MONTHS[target_day.month - 1].lower()}'
 
 
 def _parse_anchor_date(raw: str | None, fallback: date) -> date:
@@ -393,6 +436,7 @@ def calendar_view(request):
         'wt_done': wt_done,
         'wt_total_real': wt_total_real,
         'add_form': HabitForm(),
+        'habit_form_anchor': anchor,
     }
     return render(request, 'calendar.html', context)
 
@@ -499,7 +543,7 @@ def _safe_next(request, fallback: str = 'dashboard') -> str:
 @require_POST
 def habit_log_today(request, habit_id: int):
     habit = get_object_or_404(Habit, id=habit_id, user=request.user)
-    today = timezone.localdate()
+    target_day = _parse_anchor_date(request.POST.get('log_date'), timezone.localdate())
     status = request.POST.get('status', 'done')
     if status not in {'done', 'partial', 'skipped'}:
         status = 'done'
@@ -510,7 +554,7 @@ def habit_log_today(request, habit_id: int):
     note = request.POST.get('note', '')
     HabitLog.objects.update_or_create(
         habit=habit,
-        log_date=today,
+        log_date=target_day,
         defaults={
             'user': request.user,
             'status': status,
@@ -532,8 +576,8 @@ def habit_log_today(request, habit_id: int):
 @require_POST
 def habit_log_undo(request, habit_id: int):
     habit = get_object_or_404(Habit, id=habit_id, user=request.user)
-    today = timezone.localdate()
-    deleted, _ = HabitLog.objects.filter(habit=habit, user=request.user, log_date=today).delete()
+    target_day = _parse_anchor_date(request.POST.get('log_date'), timezone.localdate())
+    deleted, _ = HabitLog.objects.filter(habit=habit, user=request.user, log_date=target_day).delete()
     if deleted:
         # The post_delete signal recomputes current_streak / best_streak for us
         # so the dashboard pill stays accurate.
