@@ -44,7 +44,24 @@ class LoginForm(AuthenticationForm):
         self.fields['password'].widget.attrs.update({'class': _INPUT_CSS, 'placeholder': '••••••••'})
 
 
-FREQUENCY_CHOICES = HabitSchedule.FREQUENCY_CHOICES
+FREQUENCY_CHOICES = [
+    ('daily', 'Ежедневно'),
+    ('weekly', 'По дням недели'),
+    ('custom', 'Только выбранная дата'),
+]
+TARGET_TYPE_CHOICES = [
+    ('check', 'Да / нет'),
+    ('minutes', 'Время'),
+    ('count', 'Количество'),
+]
+TARGET_UNIT_CHOICES = [
+    ('times', 'раз'),
+    ('minutes', 'минут'),
+    ('pages', 'страниц'),
+    ('steps', 'шагов'),
+    ('glasses', 'стаканов'),
+    ('kilometers', 'км'),
+]
 
 
 def _week_bounds(anchor):
@@ -56,7 +73,11 @@ class HabitForm(forms.ModelForm):
     duration_minutes = forms.IntegerField(min_value=0, max_value=600, required=False, initial=15)
     frequency_type = forms.ChoiceField(choices=FREQUENCY_CHOICES, initial='daily')
     days_of_week = forms.CharField(required=False, initial='1,2,3,4,5,6,7')
-    schedule_anchor_date = forms.DateField(required=False)
+    schedule_anchor_date = forms.DateField(
+        required=False,
+        input_formats=['%Y-%m-%d'],
+        widget=forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
+    )
     reminder_time = forms.TimeField(required=False)
     # Optional time-of-day window (e.g. 13:00..14:00). Both blank => all-day.
     window_start = forms.TimeField(required=False, widget=forms.TimeInput(attrs={'type': 'time'}))
@@ -65,6 +86,29 @@ class HabitForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        field_classes = {
+            'title': _INPUT_CSS,
+            'description': _INPUT_CSS,
+            'icon': _INPUT_CSS,
+            'color': _INPUT_CSS,
+            'target_type': _INPUT_CSS,
+            'target_value': _INPUT_CSS,
+            'target_unit': _INPUT_CSS,
+            'duration_minutes': _INPUT_CSS,
+            'frequency_type': _INPUT_CSS,
+            'days_of_week': _INPUT_CSS,
+            'schedule_anchor_date': _INPUT_CSS,
+            'reminder_time': _INPUT_CSS,
+            'window_start': _INPUT_CSS,
+            'window_end': _INPUT_CSS,
+            'tag_names': _INPUT_CSS,
+        }
+        for name, css in field_classes.items():
+            if name in self.fields:
+                self.fields[name].widget.attrs['class'] = css
+        self.fields['target_type'].choices = TARGET_TYPE_CHOICES
+        self.fields['target_unit'].choices = TARGET_UNIT_CHOICES
+        self.fields['days_of_week'].widget = forms.HiddenInput()
         if not self.instance or not self.instance.pk:
             return
         schedule = getattr(self.instance, 'schedule', None)
@@ -86,6 +130,8 @@ class HabitForm(forms.ModelForm):
             raise forms.ValidationError(
                 'Укажи и время начала, и время конца окна — либо оставь оба поля пустыми.'
             )  # noqa: E501
+        if ws and we and we < ws:
+            raise forms.ValidationError('Конец окна времени не должен быть раньше начала.')
         return cleaned
 
     class Meta:

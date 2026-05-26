@@ -111,9 +111,10 @@ class UserProfileAdmin(BrandedAdminMixin, admin.ModelAdmin):
         'current_streak',
         'best_streak',
         'mascot_mood',
+        'onboarding_completed',
         'updated_at',
     )
-    list_filter = ('mascot_mood', 'level')
+    list_filter = ('mascot_mood', 'level', 'onboarding_completed')
     search_fields = ('user__username', 'user__email', 'mascot_name')
     list_select_related = ('user',)
     autocomplete_fields = ('user',)

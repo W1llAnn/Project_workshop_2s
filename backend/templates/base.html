@@ -548,17 +548,58 @@
 {% block scripts %}{% endblock %}
 <script>
   (function () {
-    document.addEventListener('click', (event) => {
+    const closeHabitMenus = () => {
       document.querySelectorAll('[data-habit-actions-menu]').forEach(menu => {
-        if (!menu.closest('[data-habit-actions]')?.contains(event.target)) menu.classList.add('hidden');
+        menu.classList.add('hidden');
+        menu.style.left = '';
+        menu.style.top = '';
       });
+    };
+    const placeHabitMenu = (toggle, menu) => {
+      if (menu.parentElement !== document.body) {
+        document.body.appendChild(menu);
+      }
+      menu.classList.remove('hidden');
+      const gap = 8;
+      const rect = toggle.getBoundingClientRect();
+      const menuRect = menu.getBoundingClientRect();
+      let left = rect.left;
+      let top = rect.bottom + gap;
+
+      if (left < gap) left = gap;
+      if (left + menuRect.width > window.innerWidth - gap) {
+        left = rect.right - menuRect.width;
+      }
+      if (left < gap) left = window.innerWidth - menuRect.width - gap;
+      if (top + menuRect.height > window.innerHeight - gap) {
+        top = rect.top - menuRect.height - gap;
+      }
+      if (top < gap) top = gap;
+
+      menu.style.left = `${left}px`;
+      menu.style.top = `${top}px`;
+    };
+
+    document.addEventListener('click', (event) => {
+      if (event.target.closest('[data-habit-actions-menu]')) return;
       const toggle = event.target.closest('[data-habit-actions-toggle]');
-      if (!toggle) return;
+      if (!toggle) {
+        closeHabitMenus();
+        return;
+      }
       event.preventDefault();
       event.stopPropagation();
-      const menu = toggle.closest('[data-habit-actions]')?.querySelector('[data-habit-actions-menu]');
-      if (menu) menu.classList.toggle('hidden');
+      const root = toggle.closest('[data-habit-actions]');
+      if (!root) return;
+      root._habitActionsMenu = root._habitActionsMenu || root.querySelector('[data-habit-actions-menu]');
+      const menu = root._habitActionsMenu;
+      if (!menu) return;
+      const willOpen = menu.classList.contains('hidden');
+      closeHabitMenus();
+      if (willOpen) placeHabitMenu(toggle, menu);
     });
+    window.addEventListener('resize', closeHabitMenus);
+    window.addEventListener('scroll', closeHabitMenus, true);
   })();
   // =====================================================================
   // Notification bell system

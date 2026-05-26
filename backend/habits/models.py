@@ -36,6 +36,7 @@ class UserProfile(models.Model):
     best_streak = models.PositiveIntegerField(default=0)
     mascot_name = models.CharField(max_length=64, default='Хома')
     mascot_mood = models.CharField(max_length=16, choices=MASCOT_MOOD_CHOICES, default='happy')
+    onboarding_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
