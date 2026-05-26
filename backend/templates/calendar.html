@@ -28,13 +28,6 @@
     animation: pill-enter .45s cubic-bezier(.22,1,.36,1) both;
   }
   .cal-pill:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 22px rgba(0, 0, 0, .12); }
-  .cal-pill[draggable="true"] { cursor: grab; }
-  .mini-pill[draggable="true"] { cursor: grab; }
-  .cal-pill.dragging, .mini-pill.dragging { opacity: .45; transform: scale(.98); }
-  .cal-slot.drop-target, .cal-untimed.drop-target, .month-cell.drop-target {
-    background: rgba(76, 175, 80, .12);
-    box-shadow: inset 0 0 0 2px rgba(76, 175, 80, .35);
-  }
 
   /* Reveal pills as a subtle pop on first paint. */
   @keyframes pill-enter {
@@ -116,10 +109,7 @@
   .month-cell.out { background: #FAFAF8; color: #C0C0C0; }
   .month-cell .num { font-size: 13px; font-weight: 600; }
   .month-cell.today .num { color: #FFF; background: #4CAF50; border-radius: 999px; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; }
-  .month-cell .mini-pill { font-size: 9px; padding: 1px 6px; border-radius: 6px; truncate: ellipsis; max-width: 100%; overflow: visible; white-space: nowrap; opacity: 1; }
-  .mini-pill [data-habit-actions-toggle] { width: 18px; height: 18px; border: 0; background: rgba(255,255,255,.55); }
-  .mini-pill [data-habit-actions-menu] { top: 20px; font-size: 12px; }
-  .cal-pill [data-habit-actions-toggle] { width: 24px; height: 24px; }
+  .month-cell .mini-pill { font-size: 9px; padding: 1px 6px; border-radius: 6px; truncate: ellipsis; max-width: 100%; overflow: hidden; white-space: nowrap; opacity: 1; }
   /* Month-view mini-pills follow the same rule: done = faded outline,
      not-done = solid, bright color. */
   .month-cell .mini-pill.is-done {
@@ -141,7 +131,7 @@
        class="text-sm text-green-700 hover:underline {% if anchor == today %}invisible{% endif %}">
       <i class="fas fa-rotate-left mr-1"></i>Сегодня
     </a>
-    <button onclick="window.openHabitModal ? window.openHabitModal('{{ anchor|date:'Y-m-d' }}') : document.querySelector('[data-modal=add]').classList.add('open')"
+    <button onclick="document.querySelector('[data-modal=add]').classList.add('open')"
             class="px-4 py-2 bg-green-500 text-white rounded-xl font-semibold hover:bg-green-600 flex items-center gap-2">
       <i class="fas fa-plus"></i> Новая привычка
     </button>
@@ -156,7 +146,7 @@
         <h2 class="text-2xl md:text-3xl font-bold mb-1 font-display">Твой недельный поток</h2>
         <p class="text-gray-700">Визуализируй свой успех шаг за шагом! 🐹</p>
       </div>
-      <img src="{% static 'img/mascot.png' %}" class="mascot-img w-24 h-24 hidden sm:block self-end -mr-2 -mb-2 mascot-bob" alt="">
+      <img src="{% static 'img/mascot.png' %}" class="w-24 h-24 hidden sm:block self-end -mr-2 -mb-2 mascot-bob" alt="">
     </div>
   </div>
   <div class="glass-card p-6 flex flex-col justify-center text-center">
@@ -212,15 +202,10 @@
             {% endif %}
           </div>
           {% for pill in cell.pills %}
-            <div class="mini-pill pill-{{ pill.habit.color }} {% if pill.is_done %}is-done{% endif %} flex items-center justify-between gap-1"
-               draggable="true"
-               data-draggable-habit="1"
-               data-habit-id="{{ pill.habit.id }}"
-               data-source-date="{{ cell.date|date:'Y-m-d' }}"
-               data-move-url="{% url 'habit_schedule_move' pill.habit.id %}">
-              <a href="{% url 'habit_detail' pill.habit.id %}" class="truncate min-w-0">{{ pill.habit.title }}</a>
-              {% with habit=pill.habit %}{% include "includes/habit_actions.html" %}{% endwith %}
-            </div>
+            <a href="{% url 'habit_detail' pill.habit.id %}"
+               class="mini-pill pill-{{ pill.habit.color }} {% if pill.is_done %}is-done{% endif %}">
+              {{ pill.habit.title }}
+            </a>
           {% endfor %}
         </div>
       {% endfor %}
@@ -243,22 +228,15 @@
       <!-- "Без времени" lane -->
       <div class="cal-untimed text-[10px] text-gray-400 flex items-center justify-end pr-2">без времени</div>
       {% for day in grid_days %}
-        <div class="cal-untimed" data-cal-untimed="1" data-date="{{ day.date|date:'Y-m-d' }}">
+        <div class="cal-untimed">
           {% for pill in day.untimed %}
-            <div class="cal-pill pill-{{ pill.habit.color }} {% if pill.is_done %}is-done{% endif %}"
-               draggable="true"
-               data-draggable-habit="1"
-               data-habit-id="{{ pill.habit.id }}"
-               data-source-date="{{ day.date|date:'Y-m-d' }}"
-               data-move-url="{% url 'habit_schedule_move' pill.habit.id %}">
-              <div class="flex items-start justify-between gap-2">
-              <a href="{% url 'habit_detail' pill.habit.id %}" class="ttl flex items-center gap-1 min-w-0">
+            <a href="{% url 'habit_detail' pill.habit.id %}"
+               class="cal-pill pill-{{ pill.habit.color }} {% if pill.is_done %}is-done{% endif %}">
+              <span class="ttl flex items-center gap-1">
                 {{ pill.habit.title }}
                 {% if pill.is_done %}<i class="fas fa-circle-check text-[11px] opacity-70"></i>{% endif %}
-              </a>
-              {% with habit=pill.habit %}{% include "includes/habit_actions.html" %}{% endwith %}
-              </div>
-            </div>
+              </span>
+            </a>
           {% endfor %}
         </div>
       {% endfor %}
@@ -271,15 +249,9 @@
                data-empty="{% spaceless %}{% for slot in day.slots %}{% if slot.hour == hour %}{% if slot.pills %}0{% else %}1{% endif %}{% endif %}{% endfor %}{% endspaceless %}">
             {% for slot in day.slots %}{% if slot.hour == hour %}
               {% for pill in slot.pills %}
-                <div class="cal-pill pill-{{ pill.habit.color }} {% if pill.is_done %}is-done{% endif %}"
-                   draggable="true"
-                   data-draggable-habit="1"
-                   data-habit-id="{{ pill.habit.id }}"
-                   data-source-date="{{ day.date|date:'Y-m-d' }}"
-                   data-move-url="{% url 'habit_schedule_move' pill.habit.id %}">
-                  <div class="flex items-start justify-between gap-2">
-                  <a href="{% url 'habit_detail' pill.habit.id %}" class="min-w-0">
-                  <span class="cat block">
+                <a href="{% url 'habit_detail' pill.habit.id %}"
+                   class="cal-pill pill-{{ pill.habit.color }} {% if pill.is_done %}is-done{% endif %}">
+                  <span class="cat">
                     {% if pill.habit.icon == 'spa' %}йога
                     {% elif pill.habit.icon == 'dumbbell' %}спорт
                     {% elif pill.habit.icon == 'book' %}чтение
@@ -298,10 +270,7 @@
                     {{ pill.habit.title|truncatechars:24 }}
                     {% if pill.is_done %}<i class="fas fa-circle-check text-[11px] opacity-70"></i>{% endif %}
                   </span>
-                  </a>
-                  {% with habit=pill.habit %}{% include "includes/habit_actions.html" %}{% endwith %}
-                  </div>
-                </div>
+                </a>
               {% endfor %}
             {% endif %}{% endfor %}
           </div>
@@ -312,7 +281,7 @@
 </div>
 
 <!-- Floating "+" FAB -->
-<button onclick="window.openHabitModal ? window.openHabitModal('{{ anchor|date:'Y-m-d' }}') : document.querySelector('[data-modal=add]').classList.add('open')"
+<button onclick="document.querySelector('[data-modal=add]').classList.add('open')"
         class="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-green-500 hover:bg-green-600 text-white shadow-lg flex items-center justify-center text-xl z-30 md:right-10 md:bottom-10"
         title="Новая привычка">
   <i class="fas fa-plus"></i>
@@ -331,13 +300,7 @@
       const winEnd   = modal.querySelector('input[name=window_end]');
       const titleInput = modal.querySelector('input[name=title]');
       const hh = (h) => String(h).padStart(2, '0') + ':00';
-      const anchorInput = modal.querySelector('input[name=schedule_anchor_date]');
-      const openModal = (dateValue) => {
-        if (anchorInput && dateValue) anchorInput.value = dateValue;
-        if (window.openHabitModal) {
-          window.openHabitModal(dateValue);
-          return;
-        }
+      const openModal = () => {
         modal.classList.add('open');
         if (titleInput) setTimeout(() => titleInput.focus(), 50);
       };
@@ -345,223 +308,21 @@
       document.querySelectorAll('.cal-slot[data-cal-slot]').forEach(slot => {
         slot.addEventListener('click', (e) => {
           // Don't intercept clicks that landed on an existing habit pill.
-          if (e.target.closest('[data-draggable-habit]')) return;
+          if (e.target.closest('a.cal-pill')) return;
           const h = parseInt(slot.dataset.hour, 10);
           if (!isNaN(h)) {
             if (winStart) winStart.value = hh(h);
             if (winEnd)   winEnd.value   = hh(Math.min(h + 1, 23));
           }
-          openModal(slot.dataset.date);
+          openModal();
         });
       });
 
       document.querySelectorAll('.month-cell[data-month-cell]').forEach(cell => {
         cell.addEventListener('click', (e) => {
-          if (e.target.closest('[data-draggable-habit]')) return;
+          if (e.target.closest('a.mini-pill')) return;
           // Month view doesn't carry an hour — leave window_* alone.
-          openModal(cell.dataset.date);
-        });
-      });
-
-      let dragged = null;
-      let originalParent = null;
-      let originalNext = null;
-      let dragStarted = false;
-      const csrf = document.querySelector('input[name=csrfmiddlewaretoken]')?.value || '';
-      const moveDragged = (target) => {
-        if (!dragged) return;
-        originalParent = dragged.parentElement;
-        originalNext = dragged.nextElementSibling;
-        target.appendChild(dragged);
-        if (target.matches('.cal-slot')) target.dataset.empty = '0';
-        if (originalParent && originalParent.matches('.cal-slot') && !originalParent.querySelector('.cal-pill')) {
-          originalParent.dataset.empty = '1';
-        }
-      };
-      const showMoveError = (message) => {
-        window.alert(message || 'Не удалось перенести привычку. Попробуй ещё раз.');
-      };
-
-      const cleanupDuplicatePills = (pill, data, targetHour) => {
-        document.querySelectorAll(`[data-draggable-habit][data-habit-id="${pill.dataset.habitId}"]`).forEach(other => {
-          if (other === pill) return;
-          if (data.frequency_type === 'weekly' || data.frequency_type === 'custom') {
-            const parent = other.parentElement;
-            other.remove();
-            if (parent && parent.matches('.cal-slot') && !parent.querySelector('.cal-pill')) parent.dataset.empty = '1';
-          } else if (data.frequency_type === 'daily' && targetHour) {
-            const parent = other.parentElement;
-            const dailySlot = document.querySelector(`.cal-slot[data-date="${other.dataset.sourceDate}"][data-hour="${targetHour}"]`);
-            if (dailySlot) {
-              dailySlot.appendChild(other);
-              dailySlot.dataset.empty = '0';
-              if (parent && parent.matches('.cal-slot') && !parent.querySelector('.cal-pill')) parent.dataset.empty = '1';
-            }
-          } else if (data.frequency_type === 'daily') {
-            const parent = other.parentElement;
-            const untimedLane = document.querySelector(`.cal-untimed[data-date="${other.dataset.sourceDate}"]`);
-            if (untimedLane) {
-              untimedLane.appendChild(other);
-              if (parent && parent.matches('.cal-slot') && !parent.querySelector('.cal-pill')) parent.dataset.empty = '1';
-            }
-          }
-        });
-      };
-
-      document.querySelectorAll('[data-draggable-habit]').forEach(pill => {
-        pill.addEventListener('dragstart', (e) => {
-          dragged = pill;
-          originalParent = pill.parentElement;
-          originalNext = pill.nextElementSibling;
-          dragStarted = true;
-          pill.classList.add('dragging');
-          e.dataTransfer.effectAllowed = 'move';
-          e.dataTransfer.setData('text/plain', pill.dataset.habitId);
-        });
-        pill.addEventListener('dragend', () => {
-          pill.classList.remove('dragging');
-          document.querySelectorAll('.cal-slot.drop-target, .cal-untimed.drop-target, .month-cell.drop-target').forEach(slot => slot.classList.remove('drop-target'));
-          setTimeout(() => { dragStarted = false; }, 0);
-        });
-        pill.addEventListener('click', (e) => {
-          if (dragStarted) e.preventDefault();
-        });
-      });
-
-      document.querySelectorAll('.cal-slot[data-cal-slot]').forEach(slot => {
-        slot.addEventListener('dragover', (e) => {
-          if (!dragged) return;
-          e.preventDefault();
-          e.dataTransfer.dropEffect = 'move';
-          slot.classList.add('drop-target');
-        });
-        slot.addEventListener('dragleave', () => {
-          slot.classList.remove('drop-target');
-        });
-        slot.addEventListener('drop', async (e) => {
-          if (!dragged) return;
-          e.preventDefault();
-          slot.classList.remove('drop-target');
-          const pill = dragged;
-          const fromParent = originalParent;
-          const fromNext = originalNext;
-          const targetDate = slot.dataset.date;
-          const targetHour = slot.dataset.hour;
-          const sourceDate = pill.dataset.sourceDate;
-          if (!targetDate || !targetHour || !pill.dataset.moveUrl) return;
-
-          moveDragged(slot);
-          try {
-            const response = await fetch(pill.dataset.moveUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrf,
-                'X-Requested-With': 'XMLHttpRequest',
-              },
-              body: JSON.stringify({ date: targetDate, hour: targetHour, source_date: sourceDate }),
-            });
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok) throw new Error(data.detail || 'Не удалось обновить расписание.');
-            pill.dataset.sourceDate = targetDate;
-            cleanupDuplicatePills(pill, data, targetHour);
-          } catch (err) {
-            if (fromParent) fromParent.insertBefore(pill, fromNext);
-            if (slot && !slot.querySelector('.cal-pill')) slot.dataset.empty = '1';
-            showMoveError(err.message);
-          } finally {
-            dragged = null;
-          }
-        });
-      });
-
-      document.querySelectorAll('.cal-untimed[data-cal-untimed]').forEach(lane => {
-        lane.addEventListener('dragover', (e) => {
-          if (!dragged) return;
-          e.preventDefault();
-          e.dataTransfer.dropEffect = 'move';
-          lane.classList.add('drop-target');
-        });
-        lane.addEventListener('dragleave', () => {
-          lane.classList.remove('drop-target');
-        });
-        lane.addEventListener('drop', async (e) => {
-          if (!dragged) return;
-          e.preventDefault();
-          lane.classList.remove('drop-target');
-          const pill = dragged;
-          const fromParent = originalParent;
-          const fromNext = originalNext;
-          const targetDate = lane.dataset.date;
-          const sourceDate = pill.dataset.sourceDate;
-          if (!targetDate || !pill.dataset.moveUrl) return;
-
-          moveDragged(lane);
-          try {
-            const response = await fetch(pill.dataset.moveUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrf,
-                'X-Requested-With': 'XMLHttpRequest',
-              },
-              body: JSON.stringify({ date: targetDate, source_date: sourceDate, clear_time: true }),
-            });
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok) throw new Error(data.detail || 'Не удалось обновить расписание.');
-            pill.dataset.sourceDate = targetDate;
-            cleanupDuplicatePills(pill, data, null);
-          } catch (err) {
-            if (fromParent) fromParent.insertBefore(pill, fromNext);
-            showMoveError(err.message);
-          } finally {
-            dragged = null;
-          }
-        });
-      });
-
-      document.querySelectorAll('.month-cell[data-month-cell]').forEach(cell => {
-        cell.addEventListener('dragover', (e) => {
-          if (!dragged) return;
-          e.preventDefault();
-          e.dataTransfer.dropEffect = 'move';
-          cell.classList.add('drop-target');
-        });
-        cell.addEventListener('dragleave', () => {
-          cell.classList.remove('drop-target');
-        });
-        cell.addEventListener('drop', async (e) => {
-          if (!dragged) return;
-          e.preventDefault();
-          cell.classList.remove('drop-target');
-          const pill = dragged;
-          const fromParent = originalParent;
-          const fromNext = originalNext;
-          const targetDate = cell.dataset.date;
-          const sourceDate = pill.dataset.sourceDate;
-          if (!targetDate || !pill.dataset.moveUrl) return;
-
-          moveDragged(cell);
-          try {
-            const response = await fetch(pill.dataset.moveUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrf,
-                'X-Requested-With': 'XMLHttpRequest',
-              },
-              body: JSON.stringify({ date: targetDate, source_date: sourceDate }),
-            });
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok) throw new Error(data.detail || 'Не удалось обновить расписание.');
-            pill.dataset.sourceDate = targetDate;
-            cleanupDuplicatePills(pill, data, null);
-          } catch (err) {
-            if (fromParent) fromParent.insertBefore(pill, fromNext);
-            showMoveError(err.message);
-          } finally {
-            dragged = null;
-          }
+          openModal();
         });
       });
     };
