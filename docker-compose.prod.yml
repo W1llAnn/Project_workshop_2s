@@ -8,11 +8,11 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-habithamster}
-      POSTGRES_USER: ${POSTGRES_USER:-habithamster}
+      POSTGRES_DB: ${DB_NAME:-habithamster}
+      POSTGRES_USER: ${DB_USER:-habithamster}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-habithamster} -d ${POSTGRES_DB:-habithamster}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-habithamster} -d ${DB_NAME:-habithamster}"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -40,8 +40,8 @@ services:
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS:-*}
       CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS:-}
-      DB_NAME: ${POSTGRES_DB:-habithamster}
-      DB_USER: ${POSTGRES_USER:-habithamster}
+      DB_NAME: ${DB_NAME:-habithamster}
+      DB_USER: ${DB_USER:-habithamster}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       DB_HOST: db
       DB_PORT: "5432"
@@ -92,6 +92,7 @@ services:
     depends_on:
       - db
       - redis
+    networks: [habithamster]
   
   celery-beat:
     restart: always
@@ -107,6 +108,7 @@ services:
     depends_on:
       - db
       - redis
+    networks: [habithamster]
 
 volumes:
   db_data:
