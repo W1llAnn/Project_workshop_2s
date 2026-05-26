@@ -24,6 +24,7 @@ services:
     container_name: habithamster-redis
     ports:
       - "6379:6379"
+    networks: [habithamster]
 
   web:
     build:
