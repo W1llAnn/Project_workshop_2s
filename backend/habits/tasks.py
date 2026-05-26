@@ -24,7 +24,7 @@ def create_user_recommendations_task(user_id: int | None = None):
         recommendation = recommend_for_user(user_id=user.pk, top_k=1)
 
         message = f'Новая рекомендация привычки: {recommendation[0]["habit_title"]}, {recommendation[0]["explanation"]}'
-        title = 'У вас новая рекомендация'
+        title = 'У вас новая рекомендация привычки'
         
         exists_notification = Notification.objects.filter(user_id=user_id, title=title).last()
 
@@ -33,7 +33,7 @@ def create_user_recommendations_task(user_id: int | None = None):
             Notification.objects.create(
                 user=user,
                 notif_type='recommendation',
-                title='У вас новая рекомендация привычки',
+                title=title,
                 message=message,
-                icon='fa-lightbulb-o',
+                icon='fa-lightbulb',
             )
