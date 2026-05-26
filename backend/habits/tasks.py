@@ -11,11 +11,14 @@ def train_recommendation_model_task():
 
 
 @shared_task
-def create_user_recommendations_task():
+def create_user_recommendations_task(user_id: int | None = None):
     from django.contrib.auth import get_user_model
 
     User = get_user_model()
     users = User.objects.all()
+
+    if user_id:
+        users = users.filter(id=user_id)
 
     for user in users:
         recommendation = recommend_for_user(user_id=user.pk, top_k=1)
@@ -24,6 +27,6 @@ def create_user_recommendations_task():
             user=user,
             notif_type='recommendation',
             title='У вас новая рекомендация привычки',
-            message=f'Новая рекомендация привычки: {recommendation["habit_title"]}, {recommendation["explanation"]}',
+            message=f'Новая рекомендация привычки: {recommendation[0]["habit_title"]}, {recommendation[0]["explanation"]}',
             icon='fa-award',
         )
