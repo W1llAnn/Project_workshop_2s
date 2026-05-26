@@ -16,50 +16,48 @@
     <div class="hidden md:block w-40 h-2 bg-gray-200 rounded-full overflow-hidden">
       <div class="h-full bg-green-500 progress-fill progress-shine" style="width: 0%" data-progress="{{ profile.level_progress_pct }}"></div>
     </div>
-    <div class="relative" data-notifications>
-      <button type="button" class="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200" title="Уведомления" data-notifications-toggle aria-expanded="false">
+
+    <!-- Notification bell -->
+    <div class="relative" id="notif-bell-wrapper">
+      <button id="notif-bell-btn"
+              class="relative w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+              title="Уведомления" aria-label="Уведомления">
         <i class="fas fa-bell text-gray-600"></i>
-      </button>
-      <div class="hidden absolute right-0 top-12 w-80 max-w-[calc(100vw-2rem)] glass-card p-4 z-40 text-left" data-notifications-menu>
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="font-bold">Уведомления</h3>
-          <span class="text-[10px] uppercase text-gray-400 font-semibold">сегодня</span>
-        </div>
-        {% if due_today or insights %}
-          <div class="space-y-2">
-            {% if due_today %}
-              <div class="flex gap-3 rounded-xl bg-green-50 p-3 text-sm">
-                <i class="fas fa-calendar-check text-green-600 mt-0.5"></i>
-                <div>
-                  <div class="font-semibold text-gray-800">Сегодня у тебя запланированы привычки</div>
-                  <div class="text-xs text-gray-500 mt-0.5">{{ done_today }} из {{ due_today }} уже отмечено.</div>
-                </div>
-              </div>
-              <div class="flex gap-3 rounded-xl bg-orange-50 p-3 text-sm">
-                <i class="fas fa-bell text-orange-600 mt-0.5"></i>
-                <div>
-                  <div class="font-semibold text-gray-800">Не забудь отметить прогресс</div>
-                  <div class="text-xs text-gray-500 mt-0.5">Даже частичное выполнение сохраняет темп.</div>
-                </div>
-              </div>
-            {% endif %}
-            {% if insights %}
-              <a href="{% url 'analytics' %}" class="flex gap-3 rounded-xl bg-blue-50 p-3 text-sm hover:bg-blue-100 transition">
-                <i class="fas fa-lightbulb text-blue-600 mt-0.5"></i>
-                <div>
-                  <div class="font-semibold text-gray-800">Инсайты обновлены в аналитике</div>
-                  <div class="text-xs text-gray-500 mt-0.5">Открой аналитику, чтобы увидеть свежие подсказки.</div>
-                </div>
-              </a>
-            {% endif %}
-          </div>
+        {% if unread_notifications_count %}
+          <span id="notif-badge" class="notif-badge">{{ unread_notifications_count }}</span>
         {% else %}
-          <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-center text-sm text-gray-500">
-            Пока нет новых уведомлений
-          </div>
+          <span id="notif-badge" class="notif-badge" style="display:none">0</span>
         {% endif %}
+      </button>
+
+      <!-- Dropdown panel -->
+      <div id="notif-dropdown" aria-live="polite">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <span class="font-semibold text-sm">Уведомления</span>
+          <button id="notif-mark-all"
+                  class="text-xs text-green-600 hover:text-green-700 font-medium hover:underline"
+                  title="Отметить все прочитанными">Прочитать все</button>
+        </div>
+
+        <!-- Loading spinner -->
+        <div id="notif-loading" class="flex items-center justify-center py-10 gap-2 text-gray-400 text-sm" style="display:none">
+          <i class="fas fa-circle-notch fa-spin"></i> Загрузка…
+        </div>
+
+        <!-- Empty state -->
+        <div id="notif-empty" class="flex flex-col items-center justify-center py-10 px-4 gap-2 text-center" style="display:none">
+          <i class="fas fa-bell-slash text-3xl text-gray-300"></i>
+          <p class="text-sm text-gray-400">Пока нет уведомлений</p>
+        </div>
+
+        <!-- Notification list -->
+        <div class="notif-scroll">
+          <div id="notif-list"></div>
+        </div>
       </div>
     </div>
+      
     <button onclick="window.openHabitModal ? window.openHabitModal('{{ selected_date|date:'Y-m-d' }}') : document.querySelector('[data-modal=add]').classList.add('open')" class="px-4 py-2 bg-green-500 text-white rounded-xl font-semibold hover:bg-green-600 flex items-center gap-2">
       <i class="fas fa-plus"></i> Новая привычка
     </button>

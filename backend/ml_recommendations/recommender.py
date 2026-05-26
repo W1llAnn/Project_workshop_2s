@@ -46,7 +46,10 @@ def load_data():
     LEFT JOIN habits_activitytype at ON t.activity_type_id = at.id
     """
     tags = pd.read_sql(tags_query, connection)
-    
+
+
+    #FIXME hosfix
+    logs['score'] = logs['status'].apply(calc_interaction_score)
     return logs, tags
 
 
@@ -59,7 +62,7 @@ def calc_interaction_score(status):
 
 def train_model(model_name='rec_model_v1'):
     """Обучение гибридной модели (упрощённо)"""
-    print("🔄 Загрузка данных...")
+    print("Загрузка данных...")
     logs, tags = load_data()
     
     if len(logs) < 50:
@@ -67,7 +70,7 @@ def train_model(model_name='rec_model_v1'):
     
     # Подготовка признаков
     logs['score'] = logs['status'].apply(calc_interaction_score)
-    logs['weight'] = np.exp(-(pd.Timestamp.now().date() - pd.to_datetime(logs['log_date']).dt.date).days / 30)
+    logs['weight'] = np.exp(-(pd.Timestamp.now() - pd.to_datetime(logs['log_date'])).dt.days / 30)
     
     # Агрегация user-habit
     interaction = (
@@ -139,8 +142,8 @@ def train_model(model_name='rec_model_v1'):
     
     # Сохранение
     joblib.dump({'model': model, 'features': list(X.columns), 'matrix': matrix}, MODEL_PATH)
-    print(f"✅ Модель сохранена: {MODEL_PATH}")
-    print(f"📊 Обучено на {len(df)} примерах, {X.shape[1]} признаков")
+    print(f"Модель сохранена: {MODEL_PATH}")
+    print(f"Обучено на {len(df)} примерах, {X.shape[1]} признаков")
     
     return model
 
@@ -164,7 +167,7 @@ def recommend_for_user(user_id: int, top_k: int = 5, min_score: float = 0.5):
     # Признаки пользователя
     ulogs = logs[logs['user_id'] == user_id]
     if len(ulogs) == 0:
-        return _fallback_recommendations(user_id, top_k)
+        return _fallback_recommendations(user_id, top_k, logs)
     
     user_feat = {
         'level': ulogs['user_level'].mean(),
@@ -232,9 +235,8 @@ def recommend_for_user(user_id: int, top_k: int = 5, min_score: float = 0.5):
     return recs[:top_k]
 
 
-def _fallback_recommendations(user_id: int, top_k: int):
+def _fallback_recommendations(user_id: int, top_k: int, logs: pd.DataFrame):
     """Fallback: популярные привычки"""
-    logs, _ = load_data()
     popular = (
         logs.groupby('habit_id')['score']
         .agg(['mean', 'count'])

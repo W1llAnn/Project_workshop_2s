@@ -21,4 +21,7 @@ urlpatterns = [
     path('habits/<int:habit_id>/destroy/', views.habit_destroy, name='habit_destroy'),
     path('habits/archive/', views.habit_archive_list, name='habit_archive'),
     path('analytics/', views.analytics, name='analytics'),
+    path('notifications/', views.notifications_list, name='notifications_list'),
+    path('notifications/mark-read/', views.notifications_mark_read, name='notifications_mark_read'),
+    path('notifications/<int:notif_id>/', views.notification_detail, name='notification_detail'),
 ]

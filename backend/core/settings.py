@@ -6,12 +6,8 @@ Supports two run modes:
 1. Local quick-start (default): SQLite, no .environment file required.
 2. Docker / production: reads DB_* env vars (or a .environment file) and
    uses PostgreSQL.
-
-The flag ``USE_SQLITE`` (env or default ``True`` when no ``DB_NAME`` env var)
-selects the engine.
 """
 
-import os
 from pathlib import Path
 
 import environ
@@ -21,17 +17,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env(
     DEBUG=(bool, True),
-    SECRET_KEY=(str, 'django-insecure-change-me-for-local-development-only'),
-    # Local defaults are preview-friendly. For production/demo hardening, set
-    # exact ALLOWED_HOSTS and CSRF_TRUSTED_ORIGINS through environment vars.
-    ALLOWED_HOSTS=(list, ['localhost', '127.0.0.1', '.ngrok-free.app', '.trycloudflare.com', '.loca.lt', '.localhost.run', '.lhr.life', '.serveo.net']),
-    CSRF_TRUSTED_ORIGINS=(list, ['http://localhost:8000', 'http://127.0.0.1:8000', 'https://*.ngrok-free.app', 'https://*.trycloudflare.com', 'https://*.loca.lt', 'https://*.localhost.run', 'https://*.lhr.life', 'https://*.serveo.net']),
-    USE_SQLITE=(bool, True),
-    DB_NAME=(str, ''),
-    DB_USER=(str, ''),
-    DB_PASSWORD=(str, ''),
-    DB_HOST=(str, ''),
-    DB_PORT=(str, ''),
+    ALLOWED_HOSTS=(list, ['*']),
+    CSRF_TRUSTED_ORIGINS=(list, []),
 )
 
 # Read .environment if present; otherwise rely on env defaults above.
@@ -62,7 +49,6 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'core.middleware.BlobDBSyncMiddleware',
     'django.middleware.security.SecurityMiddleware',
     # Serve collected /static/ files via WSGI. In DEBUG mode WhiteNoise no-ops
     # (Django's runserver serves them); in production (Docker behind nginx)
@@ -97,25 +83,16 @@ TEMPLATES = [
 WSGI_APPLICATION = 'core.wsgi.application'
 
 
-# Database — SQLite by default for easy local dev, Postgres when DB_NAME is set.
-if env('USE_SQLITE') or not env('DB_NAME'):
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': env('DB_NAME'),
+        'USER': env('DB_USER'),
+        'PASSWORD': env('DB_PASSWORD'),
+        'HOST': env('DB_HOST'),
+        'PORT': env('DB_PORT'),
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql_psycopg2',
-            'NAME': env('DB_NAME'),
-            'USER': env('DB_USER'),
-            'PASSWORD': env('DB_PASSWORD'),
-            'HOST': env('DB_HOST'),
-            'PORT': env('DB_PORT'),
-        }
-    }
+}
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -175,4 +152,28 @@ REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
     ],
+}
+
+
+# пока харкод
+CELERY_BROKER_URL = 'redis://redis:6379/0'
+CELERY_RESULT_BACKEND = 'redis://redis:6379/0'
+
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+
+CELERY_TIMEZONE = 'UTC'
+
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    'train_recommendation_model_task': {
+        'task': 'habits.tasks.train_recommendation_model_task',
+        'schedule': crontab(minute='*/30'),
+    },
+    'create_user_recommendations_task': {
+        'task': 'habits.tasks.create_user_recommendations_task',
+        'schedule': crontab(hour='*/1'),
+    },
 }

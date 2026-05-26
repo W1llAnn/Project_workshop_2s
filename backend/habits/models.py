@@ -514,3 +514,47 @@ class UserInsight(models.Model):
 
     def __str__(self) -> str:
         return f'{self.insight_type}: {self.title}'
+
+
+# ---------------------------------------------------------------------------
+# Notifications.
+# ---------------------------------------------------------------------------
+
+
+class Notification(models.Model):
+    """Achievement unlock notifications for the bell dropdown."""
+
+    NOTIF_TYPE_CHOICES = [
+        ('achievement', 'Достижение'),
+        ('level_up', 'Повышение уровня'),
+        ('streak', 'Серия'),
+        ('system', 'Системное'),
+        ('recommendation', 'Рекомендация'),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='notifications',
+    )
+    notif_type = models.CharField(max_length=24, choices=NOTIF_TYPE_CHOICES, default='achievement')
+    title = models.CharField(max_length=200)
+    message = models.TextField(blank=True, default='')
+    achievement = models.ForeignKey(
+        'Achievement',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='notifications',
+    )
+    icon = models.CharField(max_length=64, blank=True, default='fa-trophy')
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Уведомление'
+        verbose_name_plural = 'Уведомления'
+
+    def __str__(self) -> str:
+        return f'{self.notif_type}: {self.title}'

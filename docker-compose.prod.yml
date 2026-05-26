@@ -5,6 +5,8 @@ services:
     restart: always
     volumes:
       - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-habithamster}
       POSTGRES_USER: ${POSTGRES_USER:-habithamster}
@@ -15,6 +17,13 @@ services:
       timeout: 5s
       retries: 20
     networks: [habithamster]
+  
+  redis:
+    image: redis:7-alpine
+    restart: always
+    container_name: habithamster-redis
+    ports:
+      - "6379:6379"
 
   web:
     build:
@@ -36,7 +45,6 @@ services:
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       DB_HOST: db
       DB_PORT: "5432"
-      USE_SQLITE: "False"
       DJANGO_SUPERUSER_USERNAME: ${DJANGO_SUPERUSER_USERNAME:?DJANGO_SUPERUSER_USERNAME is required}
       DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD:?DJANGO_SUPERUSER_PASSWORD is required}
       DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL:?DJANGO_SUPERUSER_EMAIL is required}
@@ -69,6 +77,36 @@ services:
       - staticfiles:/srv/static:ro
       - media:/srv/media:ro
     networks: [habithamster]
+  
+  celery-worker:
+    restart: always
+    container_name: habithamster-celery-worker
+    image: backend
+    build:
+      context: ./backend
+    volumes:
+      - "./backend:/backend"
+    command: celery -A core worker -l info
+    env_file:
+      - ./backend/.environment
+    depends_on:
+      - db
+      - redis
+  
+  celery-beat:
+    restart: always
+    container_name: habithamster-celery-beat
+    image: backend
+    build:
+      context: ./backend
+    volumes:
+      - "./backend:/backend"
+    command: celery -A core beat -l info
+    env_file:
+      - ./backend/.environment
+    depends_on:
+      - db
+      - redis
 
 volumes:
   db_data:

@@ -18,5 +18,8 @@ shell:
 migrate:
 	docker compose -f docker-compose.dev.yml exec backend python manage.py migrate
 
+collectstatic:
+	docker compose -f docker-compose.dev.yml exec backend python manage.py collectstatic
+
 seed-demo:
 	docker compose -f docker-compose.dev.yml exec backend python manage.py seed_demo --reset
