@@ -3,17 +3,15 @@ Create a demo user with some habits and back-filled history so the dashboard
 and analytics pages have something interesting to show.
 
 Usage:
-    python manage.py seed_demo --username demo --password <password>
+    python manage.py seed_demo --username demo --password demopass123
 """
 from __future__ import annotations
 
-import os
 import random
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
-from django.utils.crypto import get_random_string
 from django.utils import timezone
 
 from habits.models import Habit, HabitLog, HabitSchedule, Tag
@@ -97,17 +95,13 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--username', default='demo')
-        parser.add_argument('--password', default=None)
+        parser.add_argument('--password', default='demopass123')
         parser.add_argument('--days', type=int, default=60)
         parser.add_argument('--reset', action='store_true', help='Wipe existing demo data first.')
 
     def handle(self, *args, **options):
         username = options['username']
-        password = (
-            options['password']
-            or os.environ.get('DEMO_USER_PASSWORD')
-            or get_random_string(24)
-        )
+        password = options['password']
         days = options['days']
 
         user, created = User.objects.get_or_create(
@@ -187,5 +181,5 @@ class Command(BaseCommand):
             f'{created_logs} historical logs over last {days} days.'
         ))
         self.stdout.write(self.style.WARNING(
-            f'Demo login username: {username}. Set DEMO_USER_PASSWORD or pass --password to choose a known password.'
+            f'Login as {username} / {password}'
         ))

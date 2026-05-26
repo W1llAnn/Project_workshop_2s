@@ -20,6 +20,7 @@ from habits.models import (
     HabitLog,
     HabitSchedule,
     HabitTag,
+    Notification,
     Tag,
     TagCategory,
     TagCategoryWeight,
@@ -475,6 +476,33 @@ class UserInsightAdmin(BrandedAdminMixin, admin.ModelAdmin):
     search_fields = ('title', 'message', 'user__username')
     autocomplete_fields = ('user',)
     list_select_related = ('user',)
+    date_hierarchy = 'created_at'
+    readonly_fields = ('created_at',)
+    actions = ('mark_as_read', 'mark_as_unread')
+
+    @admin.action(description='Отметить как прочитанные')
+    def mark_as_read(self, request, queryset):
+        updated = queryset.update(is_read=True)
+        self.message_user(request, f'Отмечено прочитанными: {updated}', messages.SUCCESS)
+
+    @admin.action(description='Отметить как непрочитанные')
+    def mark_as_unread(self, request, queryset):
+        updated = queryset.update(is_read=False)
+        self.message_user(request, f'Сброшен признак прочтения: {updated}', messages.SUCCESS)
+
+
+# ---------------------------------------------------------------------------
+# Notifications.
+# ---------------------------------------------------------------------------
+
+
+@admin.register(Notification)
+class NotificationAdmin(BrandedAdminMixin, admin.ModelAdmin):
+    list_display = ('title', 'user', 'notif_type', 'is_read', 'achievement', 'created_at')
+    list_filter = ('notif_type', 'is_read', 'created_at')
+    search_fields = ('title', 'message', 'user__username')
+    autocomplete_fields = ('user',)
+    list_select_related = ('user', 'achievement')
     date_hierarchy = 'created_at'
     readonly_fields = ('created_at',)
     actions = ('mark_as_read', 'mark_as_unread')

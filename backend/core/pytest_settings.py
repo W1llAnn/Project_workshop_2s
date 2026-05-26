@@ -13,7 +13,6 @@ import os
 # ``django-environ`` evaluates them at import time.
 os.environ.setdefault('SECRET_KEY', 'pytest-not-secret')
 os.environ.setdefault('DEBUG', 'False')
-os.environ.setdefault('USE_SQLITE', '1')
 os.environ.setdefault('ALLOWED_HOSTS', '*')
 
 from core.settings import *  # noqa: E402,F401,F403

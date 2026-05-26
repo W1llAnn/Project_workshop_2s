@@ -16,7 +16,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from habits.forms import HabitForm, LoginForm, RegisterForm
-from habits.models import Achievement, Habit, HabitLog, HabitSchedule, UserAchievement, UserInsight
+from habits.models import Achievement, Habit, HabitLog, HabitSchedule, Notification, UserAchievement, UserInsight
 from habits.services.analytics import (
     completion_rate_for_habit,
     habit_completed_count,
@@ -421,6 +421,7 @@ def calendar_view(request):
                 f'{period_end.day} {_RUSSIAN_MONTHS[period_end.month - 1]} {period_start.year}'
             )
 
+    print(grid_days)
     context = {
         'today': today,
         'anchor': anchor,
@@ -901,3 +902,79 @@ def analytics(request):
         'correlations': correlations,
     }
     return render(request, 'analytics.html', context)
+
+
+# ---------------------------------------------------------------------------
+# Notification AJAX endpoints.
+# ---------------------------------------------------------------------------
+
+
+@login_required
+def notifications_list(request):
+    """Return JSON list of the user's notifications (last 50) + unread count."""
+    notifs = Notification.objects.filter(user=request.user)[:50]
+    unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
+    items = []
+    for n in notifs:
+        items.append({
+            'id': n.id,
+            'type': n.notif_type,
+            'title': n.title,
+            'message': n.message,
+            'icon': n.icon,
+            'is_read': n.is_read,
+            'achievement_id': n.achievement_id,
+            'created_at': n.created_at.isoformat(),
+        })
+    return JsonResponse({'notifications': items, 'unread_count': unread_count})
+
+
+@login_required
+@require_POST
+def notifications_mark_read(request):
+    """Mark specific notifications as read. Expects JSON body: {"ids": [1,2,3]}."""
+    import json as _json
+    try:
+        body = _json.loads(request.body)
+        ids = body.get('ids', [])
+    except (ValueError, AttributeError):
+        ids = []
+    if ids:
+        updated = Notification.objects.filter(
+            user=request.user, id__in=ids, is_read=False
+        ).update(is_read=True)
+    else:
+        updated = 0
+    unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
+    return JsonResponse({'updated': updated, 'unread_count': unread_count})
+
+
+@login_required
+def notification_detail(request, notif_id: int):
+    """Return JSON with full notification details + linked achievement data."""
+    notif = get_object_or_404(Notification, id=notif_id, user=request.user)
+    data = {
+        'id': notif.id,
+        'type': notif.notif_type,
+        'type_display': notif.get_notif_type_display(),
+        'title': notif.title,
+        'message': notif.message,
+        'icon': notif.icon,
+        'is_read': notif.is_read,
+        'created_at': notif.created_at.isoformat(),
+        'achievement': None,
+    }
+    if notif.achievement:
+        a = notif.achievement
+        data['achievement'] = {
+            'id': a.id,
+            'code': a.code,
+            'title': a.title,
+            'description': a.description,
+            'condition_type': a.condition_type,
+            'condition_display': a.get_condition_type_display(),
+            'condition_value': a.condition_value,
+            'xp_reward': a.xp_reward,
+            'icon': a.icon,
+        }
+    return JsonResponse(data)
