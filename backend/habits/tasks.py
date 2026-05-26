@@ -29,7 +29,7 @@ def create_user_recommendations_task(user_id: int | None = None):
         exists_notification = Notification.objects.filter(user_id=user_id, title=title).last()
 
         # костыльно защищаемся от дублей
-        if exists_notification.message != message:
+        if not exists_notification or exists_notification.message != message:
             Notification.objects.create(
                 user=user,
                 notif_type='recommendation',
