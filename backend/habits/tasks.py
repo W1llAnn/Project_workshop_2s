@@ -26,7 +26,7 @@ def create_user_recommendations_task(user_id: int | None = None):
         message = f'Новая рекомендация привычки: {recommendation[0]["habit_title"]}, {recommendation[0]["explanation"]}'
         title = 'У вас новая рекомендация'
         
-        exists_notification = Notification.objects.filter(user_id=user_id, title=title).latest('created_at')
+        exists_notification = Notification.objects.filter(user_id=user_id, title=title).last()
 
         # костыльно защищаемся от дублей
         if exists_notification.message != message:
