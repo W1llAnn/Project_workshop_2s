@@ -15,7 +15,7 @@ warnings.filterwarnings('ignore')
 # ==================== КОНФИГ БД ====================
 
 DB_CONFIG = {
-    'host': '157.22.203.82',
+    'host': '0.0.0.0',
     'port': '5432',
     'name': 'habithamster',
     'user': 'habithamster',
