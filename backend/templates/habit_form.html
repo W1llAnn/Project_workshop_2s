@@ -1,81 +1,286 @@
 {% extends "base.html" %}
 {% block title %}Редактировать привычку — HabitHamster{% endblock %}
 
+{% block head_extra %}
+<style>
+  .edit-field label { display: block; margin-bottom: 8px; font-size: 13px; font-weight: 700; color: #374151; }
+  .edit-field input,
+  .edit-field select,
+  .edit-field textarea {
+    width: 100%;
+    border: 1px solid #E5E7EB;
+    border-radius: 14px;
+    background: #FFFFFF;
+    padding: 12px 14px;
+    color: #1F2937;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .03);
+  }
+  .edit-field textarea { min-height: 98px; resize: vertical; }
+  .edit-field input:focus,
+  .edit-field select:focus,
+  .edit-field textarea:focus {
+    border-color: #22C55E;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, .16);
+  }
+  .weekday-choice input:checked + span {
+    background: #22C55E;
+    border-color: #22C55E;
+    color: #FFFFFF;
+    box-shadow: 0 8px 18px rgba(34, 197, 94, .18);
+  }
+</style>
+{% endblock %}
+
 {% block content %}
 <a href="{% url 'habit_detail' habit.id %}" class="text-sm text-gray-500 hover:text-green-600 inline-flex items-center gap-1.5 mb-4">
   <i class="fas fa-arrow-left"></i> К привычке
 </a>
 
-<div class="glass-card p-6 max-w-2xl">
-  <h1 class="text-3xl font-bold font-display mb-1">Редактировать привычку</h1>
-  <p class="text-sm text-gray-500 mb-6">Обнови название, расписание, цель и оформление.</p>
+<div class="glass-card p-6 md:p-8 max-w-5xl">
+  <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-8">
+    <div>
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold uppercase tracking-wide mb-3">
+        <i class="fas fa-pen"></i>
+        Редактирование
+      </div>
+      <h1 class="text-3xl md:text-4xl font-bold font-display">Редактировать привычку</h1>
+      <p class="text-gray-500 mt-2 max-w-2xl">Обнови название, расписание, цель и оформление. Поля сгруппированы так, чтобы было понятно, что именно меняется.</p>
+    </div>
+  </div>
 
-  <form method="post" class="space-y-4">
+  <form method="post" class="space-y-6" data-habit-edit-form>
     {% csrf_token %}
-    <div>
-      <label class="block text-sm font-semibold text-gray-700 mb-2">Название</label>
-      {{ form.title }}
-    </div>
-    <div>
-      <label class="block text-sm font-semibold text-gray-700 mb-2">Описание</label>
-      {{ form.description }}
-    </div>
-    <div class="grid md:grid-cols-2 gap-4">
-      <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2">Иконка</label>
-        {{ form.icon }}
+    {{ form.days_of_week }}
+
+    {% if form.non_field_errors %}
+      <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        {{ form.non_field_errors|join:" " }}
       </div>
-      <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2">Цвет</label>
-        {{ form.color }}
+    {% endif %}
+
+    <section class="rounded-2xl border border-gray-100 bg-white/80 p-5 md:p-6">
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-10 h-10 rounded-2xl bg-green-100 text-green-700 flex items-center justify-center">
+          <i class="fas fa-align-left"></i>
+        </div>
+        <div>
+          <h2 class="font-display text-xl font-bold">Основная информация</h2>
+          <p class="text-sm text-gray-500">Название и короткое описание привычки.</p>
+        </div>
       </div>
-    </div>
-    <div class="grid md:grid-cols-3 gap-4">
-      <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2">Частота</label>
-        {{ form.frequency_type }}
+      <div class="grid gap-4">
+        <div class="edit-field">
+          <label for="{{ form.title.id_for_label }}">Название</label>
+          {{ form.title }}
+          {% if form.title.errors %}<div class="text-xs text-red-500 mt-1">{{ form.title.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div class="edit-field">
+          <label for="{{ form.description.id_for_label }}">Описание</label>
+          {{ form.description }}
+          {% if form.description.errors %}<div class="text-xs text-red-500 mt-1">{{ form.description.errors|join:" " }}</div>{% endif %}
+        </div>
       </div>
-      <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2">Дни недели</label>
-        {{ form.days_of_week }}
+    </section>
+
+    <section class="rounded-2xl border border-gray-100 bg-white/80 p-5 md:p-6">
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-10 h-10 rounded-2xl bg-orange-100 text-orange-600 flex items-center justify-center">
+          <i class="fas fa-palette"></i>
+        </div>
+        <div>
+          <h2 class="font-display text-xl font-bold">Внешний вид</h2>
+          <p class="text-sm text-gray-500">Иконка и цвет карточек в dashboard и календаре.</p>
+        </div>
       </div>
-      <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2">Дата-якорь</label>
-        {{ form.schedule_anchor_date }}
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="edit-field">
+          <label for="{{ form.icon.id_for_label }}">Иконка</label>
+          {{ form.icon }}
+          {% if form.icon.errors %}<div class="text-xs text-red-500 mt-1">{{ form.icon.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div class="edit-field">
+          <label for="{{ form.color.id_for_label }}">Цвет</label>
+          {{ form.color }}
+          {% if form.color.errors %}<div class="text-xs text-red-500 mt-1">{{ form.color.errors|join:" " }}</div>{% endif %}
+        </div>
       </div>
-    </div>
-    <div class="grid md:grid-cols-2 gap-4">
-      <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2">С</label>
-        {{ form.window_start }}
+    </section>
+
+    <section class="rounded-2xl border border-gray-100 bg-white/80 p-5 md:p-6">
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-10 h-10 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center">
+          <i class="fas fa-calendar-days"></i>
+        </div>
+        <div>
+          <h2 class="font-display text-xl font-bold">Расписание</h2>
+          <p class="text-sm text-gray-500">Когда привычка должна появляться в календаре.</p>
+        </div>
       </div>
-      <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2">До</label>
-        {{ form.window_end }}
+      <div class="grid md:grid-cols-3 gap-4">
+        <div class="edit-field">
+          <label for="{{ form.frequency_type.id_for_label }}">Частота</label>
+          {{ form.frequency_type }}
+          {% if form.frequency_type.errors %}<div class="text-xs text-red-500 mt-1">{{ form.frequency_type.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div class="edit-field">
+          <label for="{{ form.schedule_anchor_date.id_for_label }}">Дата-якорь</label>
+          {{ form.schedule_anchor_date }}
+          {% if form.schedule_anchor_date.errors %}<div class="text-xs text-red-500 mt-1">{{ form.schedule_anchor_date.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div class="edit-field">
+          <label>Дни недели</label>
+          <div class="grid grid-cols-4 sm:grid-cols-7 gap-2" data-weekday-picker>
+            <label class="weekday-choice"><input type="checkbox" value="1" class="sr-only"><span class="flex h-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-sm font-bold text-gray-600 transition">Пн</span></label>
+            <label class="weekday-choice"><input type="checkbox" value="2" class="sr-only"><span class="flex h-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-sm font-bold text-gray-600 transition">Вт</span></label>
+            <label class="weekday-choice"><input type="checkbox" value="3" class="sr-only"><span class="flex h-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-sm font-bold text-gray-600 transition">Ср</span></label>
+            <label class="weekday-choice"><input type="checkbox" value="4" class="sr-only"><span class="flex h-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-sm font-bold text-gray-600 transition">Чт</span></label>
+            <label class="weekday-choice"><input type="checkbox" value="5" class="sr-only"><span class="flex h-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-sm font-bold text-gray-600 transition">Пт</span></label>
+            <label class="weekday-choice"><input type="checkbox" value="6" class="sr-only"><span class="flex h-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-sm font-bold text-gray-600 transition">Сб</span></label>
+            <label class="weekday-choice"><input type="checkbox" value="7" class="sr-only"><span class="flex h-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-sm font-bold text-gray-600 transition">Вс</span></label>
+          </div>
+          {% if form.days_of_week.errors %}<div class="text-xs text-red-500 mt-1">{{ form.days_of_week.errors|join:" " }}</div>{% endif %}
+        </div>
       </div>
-    </div>
-    <div class="grid md:grid-cols-3 gap-4">
-      <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2">Тип цели</label>
-        {{ form.target_type }}
+      <div class="mt-5 rounded-2xl border border-gray-100 bg-gray-50/70 p-4" data-time-window>
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4">
+          <div>
+            <h3 class="font-bold text-gray-900">Окно времени в дне</h3>
+            <p class="text-sm text-gray-500">Привычка будет активна только в выбранном промежутке.</p>
+          </div>
+          <div class="flex flex-wrap gap-2" data-time-presets>
+            <button type="button" data-start="08:00" data-end="12:00" class="px-3 py-2 rounded-xl bg-white border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-green-50 hover:border-green-200">Утро</button>
+            <button type="button" data-start="12:00" data-end="18:00" class="px-3 py-2 rounded-xl bg-white border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-green-50 hover:border-green-200">День</button>
+            <button type="button" data-start="18:00" data-end="23:00" class="px-3 py-2 rounded-xl bg-white border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-green-50 hover:border-green-200">Вечер</button>
+            <button type="button" data-clear="1" class="px-3 py-2 rounded-xl bg-white border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-100">Без ограничения</button>
+          </div>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="edit-field">
+            <label for="{{ form.window_start.id_for_label }}">Начало</label>
+            {{ form.window_start }}
+            {% if form.window_start.errors %}<div class="text-xs text-red-500 mt-1">{{ form.window_start.errors|join:" " }}</div>{% endif %}
+          </div>
+          <div class="edit-field">
+            <label for="{{ form.window_end.id_for_label }}">Конец</label>
+            {{ form.window_end }}
+            {% if form.window_end.errors %}<div class="text-xs text-red-500 mt-1">{{ form.window_end.errors|join:" " }}</div>{% endif %}
+          </div>
+        </div>
+        <div class="hidden mt-3 rounded-xl bg-red-50 border border-red-100 px-3 py-2 text-sm text-red-700" data-time-window-error>
+          Конец окна времени не должен быть раньше начала.
+        </div>
       </div>
-      <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2">Значение</label>
-        {{ form.target_value }}
+    </section>
+
+    <section class="rounded-2xl border border-gray-100 bg-white/80 p-5 md:p-6">
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-10 h-10 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center">
+          <i class="fas fa-bullseye"></i>
+        </div>
+        <div>
+          <h2 class="font-display text-xl font-bold">Цель</h2>
+          <p class="text-sm text-gray-500">Как измерять выполнение привычки.</p>
+        </div>
       </div>
-      <div>
-        <label class="block text-sm font-semibold text-gray-700 mb-2">Длительность</label>
-        {{ form.duration_minutes }}
+      <div class="grid md:grid-cols-4 gap-4">
+        <div class="edit-field">
+          <label for="{{ form.target_type.id_for_label }}">Тип цели</label>
+          {{ form.target_type }}
+          {% if form.target_type.errors %}<div class="text-xs text-red-500 mt-1">{{ form.target_type.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div class="edit-field">
+          <label for="{{ form.target_value.id_for_label }}">Значение</label>
+          {{ form.target_value }}
+          {% if form.target_value.errors %}<div class="text-xs text-red-500 mt-1">{{ form.target_value.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div class="edit-field">
+          <label for="{{ form.target_unit.id_for_label }}">Единица</label>
+          {{ form.target_unit }}
+          {% if form.target_unit.errors %}<div class="text-xs text-red-500 mt-1">{{ form.target_unit.errors|join:" " }}</div>{% endif %}
+        </div>
+        <div class="edit-field">
+          <label for="{{ form.duration_minutes.id_for_label }}">Длительность</label>
+          {{ form.duration_minutes }}
+          {% if form.duration_minutes.errors %}<div class="text-xs text-red-500 mt-1">{{ form.duration_minutes.errors|join:" " }}</div>{% endif %}
+        </div>
       </div>
-    </div>
-    <div>
-      <label class="block text-sm font-semibold text-gray-700 mb-2">Теги</label>
-      {{ form.tag_names }}
-    </div>
-    <div class="flex justify-end gap-2 pt-2">
-      <a href="{% url 'habit_detail' habit.id %}" class="px-4 py-2 rounded-xl bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200">Отмена</a>
-      <button class="px-5 py-2 rounded-xl bg-green-500 text-white font-semibold hover:bg-green-600">Сохранить</button>
+    </section>
+
+    <section class="rounded-2xl border border-gray-100 bg-white/80 p-5 md:p-6">
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-10 h-10 rounded-2xl bg-pink-100 text-pink-600 flex items-center justify-center">
+          <i class="fas fa-tags"></i>
+        </div>
+        <div>
+          <h2 class="font-display text-xl font-bold">Теги</h2>
+          <p class="text-sm text-gray-500">Через запятую: продуктивность, фокус, спорт.</p>
+        </div>
+      </div>
+      <div class="edit-field">
+        <label for="{{ form.tag_names.id_for_label }}">Теги</label>
+        {{ form.tag_names }}
+        {% if form.tag_names.errors %}<div class="text-xs text-red-500 mt-1">{{ form.tag_names.errors|join:" " }}</div>{% endif %}
+      </div>
+    </section>
+
+    <div class="flex flex-col sm:flex-row sm:justify-end gap-3 pt-2">
+      <a href="{% url 'habit_detail' habit.id %}" class="px-5 py-3 rounded-xl bg-gray-100 text-gray-700 font-bold hover:bg-gray-200 text-center">
+        Отмена
+      </a>
+      <button class="px-6 py-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 shadow-sm">
+        Сохранить
+      </button>
     </div>
   </form>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    const hidden = document.querySelector('input[name="days_of_week"]');
+    const picker = document.querySelector('[data-weekday-picker]');
+    if (!hidden || !picker) return;
+
+    const boxes = Array.from(picker.querySelectorAll('input[type="checkbox"]'));
+    const syncFromHidden = () => {
+      const selected = new Set((hidden.value || '1,2,3,4,5,6,7').split(',').filter(Boolean));
+      boxes.forEach(box => { box.checked = selected.has(box.value); });
+    };
+    const syncToHidden = () => {
+      const values = boxes.filter(box => box.checked).map(box => box.value);
+      hidden.value = values.length ? values.join(',') : '1,2,3,4,5,6,7';
+    };
+
+    syncFromHidden();
+    boxes.forEach(box => box.addEventListener('change', syncToHidden));
+
+    document.querySelectorAll('[data-time-window]').forEach(root => {
+      const start = root.querySelector('input[name="window_start"]');
+      const end = root.querySelector('input[name="window_end"]');
+      const error = root.querySelector('[data-time-window-error]');
+      const validate = () => {
+        const invalid = start?.value && end?.value && end.value < start.value;
+        if (error) error.classList.toggle('hidden', !invalid);
+        return !invalid;
+      };
+      root.querySelectorAll('[data-time-presets] button').forEach(button => {
+        button.addEventListener('click', () => {
+          if (button.dataset.clear) {
+            if (start) start.value = '';
+            if (end) end.value = '';
+          } else {
+            if (start) start.value = button.dataset.start || '';
+            if (end) end.value = button.dataset.end || '';
+          }
+          validate();
+        });
+      });
+      [start, end].forEach(input => input?.addEventListener('change', validate));
+      document.querySelector('[data-habit-edit-form]')?.addEventListener('submit', event => {
+        if (!validate()) event.preventDefault();
+      });
+    });
+  })();
+</script>
 {% endblock %}

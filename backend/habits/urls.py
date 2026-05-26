@@ -8,6 +8,7 @@ urlpatterns = [
     path('accounts/login/', views.HHLoginView.as_view(), name='login'),
     path('accounts/logout/', views.HHLogoutView.as_view(), name='logout'),
     path('accounts/register/', views.register_view, name='register'),
+    path('onboarding/', views.onboarding, name='onboarding'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('calendar/', views.calendar_view, name='calendar'),
     path('habits/new/', views.habit_create, name='habit_create'),

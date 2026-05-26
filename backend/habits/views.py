@@ -16,7 +16,17 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from habits.forms import HabitForm, LoginForm, RegisterForm
-from habits.models import Achievement, Habit, HabitLog, HabitSchedule, Notification, UserAchievement, UserInsight
+from habits.models import (
+    Achievement,
+    Habit,
+    HabitLog,
+    HabitSchedule,
+    Notification,
+    Tag,
+    UserAchievement,
+    UserInsight,
+    UserProfile,
+)
 from habits.services.analytics import (
     completion_rate_for_habit,
     habit_completed_count,
@@ -31,6 +41,254 @@ from habits.services.analytics import (
 )
 from habits.services.streak import habit_best_streak, habit_current_streak
 from django.utils.http import url_has_allowed_host_and_scheme
+
+
+ONBOARDING_QUESTIONS = [
+    {
+        'name': 'goal',
+        'title': 'Что ты хочешь улучшить?',
+        'options': [
+            ('fitness', 'Физическую форму'),
+            ('productivity', 'Продуктивность'),
+            ('mental_health', 'Ментальное здоровье'),
+            ('sleep', 'Сон и режим'),
+            ('learning', 'Обучение и развитие'),
+            ('discipline', 'Дисциплину'),
+            ('life_balance', 'Баланс жизни'),
+        ],
+    },
+    {
+        'name': 'format',
+        'title': 'Что тебе ближе по формату?',
+        'options': [
+            ('activity', 'Спорт и активность'),
+            ('reading', 'Чтение и обучение'),
+            ('calm', 'Медитация и спокойствие'),
+            ('planning', 'Планирование и организация'),
+            ('creativity', 'Творчество'),
+            ('social', 'Общение и социальность'),
+        ],
+    },
+    {
+        'name': 'time',
+        'title': 'Сколько времени ты реально готов уделять в день?',
+        'options': [
+            ('5', '5 минут'),
+            ('10_15', '10-15 минут'),
+            ('30', '30 минут'),
+            ('60_plus', '1 час+'),
+            ('unknown', 'Пока не знаю'),
+        ],
+    },
+]
+
+
+ONBOARDING_HABITS = [
+    {
+        'key': 'stretch',
+        'title': 'Растяжка',
+        'description': 'Мягкая разминка для тела без сложного инвентаря.',
+        'icon': 'spa',
+        'color': 'green',
+        'target_type': 'minutes',
+        'target_value': 10,
+        'target_unit': 'minutes',
+        'tags': ['растяжка', 'тело'],
+        'signals': {'fitness', 'activity', 'life_balance', '5', '10_15'},
+    },
+    {
+        'key': 'walk',
+        'title': 'Прогулка',
+        'description': 'Короткая прогулка, чтобы добавить движения и проветрить голову.',
+        'icon': 'leaf',
+        'color': 'green',
+        'target_type': 'minutes',
+        'target_value': 15,
+        'target_unit': 'minutes',
+        'tags': ['прогулка', 'здоровье'],
+        'signals': {'fitness', 'activity', 'mental_health', 'life_balance', '10_15', '30'},
+    },
+    {
+        'key': 'squats',
+        'title': '10 приседаний',
+        'description': 'Простой старт для силы и дисциплины.',
+        'icon': 'dumbbell',
+        'color': 'orange',
+        'target_type': 'count',
+        'target_value': 10,
+        'target_unit': 'times',
+        'tags': ['спорт', 'сила'],
+        'signals': {'fitness', 'activity', 'discipline', '5'},
+    },
+    {
+        'key': 'water',
+        'title': 'Вода утром',
+        'description': 'Стакан воды после пробуждения как легкий первый шаг.',
+        'icon': 'water',
+        'color': 'blue',
+        'target_type': 'count',
+        'target_value': 1,
+        'target_unit': 'glasses',
+        'tags': ['вода', 'утро'],
+        'signals': {'fitness', 'sleep', 'discipline', 'life_balance', '5', 'unknown'},
+    },
+    {
+        'key': 'read',
+        'title': 'Читать 10 минут',
+        'description': 'Небольшой ежедневный слот для книги, статьи или конспекта.',
+        'icon': 'book',
+        'color': 'blue',
+        'target_type': 'minutes',
+        'target_value': 10,
+        'target_unit': 'minutes',
+        'tags': ['чтение', 'обучение'],
+        'signals': {'learning', 'reading', 'discipline', '10_15', '30'},
+    },
+    {
+        'key': 'review',
+        'title': 'Повторить материал',
+        'description': 'Вернуться к заметкам и закрепить одну тему.',
+        'icon': 'brain',
+        'color': 'purple',
+        'target_type': 'minutes',
+        'target_value': 15,
+        'target_unit': 'minutes',
+        'tags': ['повторение', 'обучение'],
+        'signals': {'learning', 'reading', 'productivity', 'discipline', '10_15', '30', '60_plus'},
+    },
+    {
+        'key': 'one_thought',
+        'title': 'Записать 1 мысль',
+        'description': 'Короткая заметка о том, что понял, почувствовал или решил.',
+        'icon': 'brain',
+        'color': 'purple',
+        'target_type': 'count',
+        'target_value': 1,
+        'target_unit': 'times',
+        'tags': ['заметки', 'рефлексия'],
+        'signals': {'learning', 'mental_health', 'creativity', '5', 'unknown'},
+    },
+    {
+        'key': 'meditation',
+        'title': 'Медитация',
+        'description': 'Несколько спокойных минут, чтобы снизить шум и вернуться к себе.',
+        'icon': 'spa',
+        'color': 'green',
+        'target_type': 'minutes',
+        'target_value': 5,
+        'target_unit': 'minutes',
+        'tags': ['медитация', 'спокойствие'],
+        'signals': {'mental_health', 'calm', 'life_balance', '5', '10_15', 'unknown'},
+    },
+    {
+        'key': 'breathing',
+        'title': 'Дыхательная практика',
+        'description': 'Один короткий цикл дыхания для паузы в течение дня.',
+        'icon': 'heart',
+        'color': 'pink',
+        'target_type': 'minutes',
+        'target_value': 5,
+        'target_unit': 'minutes',
+        'tags': ['дыхание', 'спокойствие'],
+        'signals': {'mental_health', 'calm', 'life_balance', '5', 'unknown'},
+    },
+    {
+        'key': 'gratitude',
+        'title': 'Дневник благодарности',
+        'description': 'Записать одну вещь, за которую сегодня можно сказать спасибо.',
+        'icon': 'heart',
+        'color': 'pink',
+        'target_type': 'count',
+        'target_value': 1,
+        'target_unit': 'times',
+        'tags': ['дневник', 'благодарность'],
+        'signals': {'mental_health', 'calm', 'creativity', 'life_balance', '5', '10_15'},
+    },
+    {
+        'key': 'day_plan',
+        'title': 'План дня',
+        'description': 'Наметить несколько дел до того, как день начнет шуметь.',
+        'icon': 'code',
+        'color': 'blue',
+        'target_type': 'minutes',
+        'target_value': 10,
+        'target_unit': 'minutes',
+        'tags': ['планирование', 'продуктивность'],
+        'signals': {'productivity', 'planning', 'discipline', '10_15', '30'},
+    },
+    {
+        'key': 'main_task',
+        'title': '1 главная задача',
+        'description': 'Выбрать один результат дня и держать его в фокусе.',
+        'icon': 'code',
+        'color': 'orange',
+        'target_type': 'count',
+        'target_value': 1,
+        'target_unit': 'times',
+        'tags': ['фокус', 'продуктивность'],
+        'signals': {'productivity', 'planning', 'discipline', '5', '10_15', 'unknown'},
+    },
+    {
+        'key': 'desk_reset',
+        'title': 'Убрать рабочее место',
+        'description': 'Две минуты порядка вокруг себя, чтобы проще начать.',
+        'icon': 'leaf',
+        'color': 'green',
+        'target_type': 'minutes',
+        'target_value': 5,
+        'target_unit': 'minutes',
+        'tags': ['порядок', 'организация'],
+        'signals': {'productivity', 'planning', 'discipline', 'life_balance', '5'},
+    },
+    {
+        'key': 'phone_away',
+        'title': 'Убрать телефон перед сном',
+        'description': 'Освободить последний отрезок вечера от бесконечной ленты.',
+        'icon': 'moon',
+        'color': 'purple',
+        'target_type': 'check',
+        'target_value': 1,
+        'target_unit': 'times',
+        'tags': ['сон', 'режим'],
+        'signals': {'sleep', 'discipline', 'calm', '5', '10_15'},
+    },
+    {
+        'key': 'evening_ritual',
+        'title': 'Вечерний ритуал',
+        'description': 'Один повторяемый вечерний шаг: душ, книга, тишина или подготовка одежды.',
+        'icon': 'moon',
+        'color': 'blue',
+        'target_type': 'minutes',
+        'target_value': 15,
+        'target_unit': 'minutes',
+        'tags': ['сон', 'вечер'],
+        'signals': {'sleep', 'calm', 'life_balance', '10_15', '30'},
+    },
+    {
+        'key': 'creative_note',
+        'title': 'Творческая заметка',
+        'description': 'Набросать идею, фразу, рисунок или маленький фрагмент проекта.',
+        'icon': 'palette',
+        'color': 'pink',
+        'target_type': 'minutes',
+        'target_value': 10,
+        'target_unit': 'minutes',
+        'tags': ['творчество', 'идея'],
+        'signals': {'creativity', 'life_balance', 'learning', '10_15', '30'},
+    },
+    {
+        'key': 'message_friend',
+        'title': 'Написать близкому',
+        'description': 'Короткое сообщение человеку, с которым хочется сохранить связь.',
+        'icon': 'heart',
+        'color': 'pink',
+        'target_type': 'count',
+        'target_value': 1,
+        'target_unit': 'times',
+        'tags': ['общение', 'баланс'],
+        'signals': {'social', 'life_balance', 'mental_health', '5', 'unknown'},
+    },
+]
 
 
 # ---------------------------------------------------------------------------
@@ -57,10 +315,182 @@ def register_view(request):
             user = form.save()
             login(request, user)
             messages.success(request, 'Добро пожаловать в HabitHamster!')
-            return redirect('dashboard')
+            return redirect('onboarding')
     else:
         form = RegisterForm()
     return render(request, 'auth/register.html', {'form': form})
+
+
+@login_required
+def onboarding(request):
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    if profile.onboarding_completed and request.method == 'GET':
+        return redirect('dashboard')
+
+    if request.method == 'POST' and request.POST.get('action') == 'skip':
+        _complete_onboarding(profile)
+        messages.info(request, 'Onboarding пропущен. Ты всегда можешь добавить привычки вручную.')
+        return redirect('dashboard')
+
+    if request.method == 'POST' and request.POST.get('action') == 'add':
+        selected = request.POST.getlist('habits')
+        created_count = _create_onboarding_habits(request.user, selected)
+        _complete_onboarding(profile)
+        if created_count:
+            messages.success(request, f'Добавлено привычек: {created_count}. Можно начинать.')
+        else:
+            messages.info(request, 'Onboarding завершен. Рекомендации можно добавить вручную позже.')
+        return redirect('dashboard')
+
+    answers = _onboarding_answers(request.POST) if request.method == 'POST' else {}
+    if request.method == 'POST':
+        missing = [q['title'] for q in ONBOARDING_QUESTIONS if not answers.get(q['name'])]
+        if missing:
+            messages.error(request, 'Ответь на все вопросы, чтобы получить рекомендации.')
+        else:
+            recommendations = _onboarding_recommendations(answers)
+            return render(
+                request,
+                'onboarding.html',
+                {
+                    'questions': ONBOARDING_QUESTIONS,
+                    'answers': answers,
+                    'recommendations': recommendations,
+                    'show_recommendations': True,
+                },
+            )
+
+    return render(
+        request,
+        'onboarding.html',
+        {
+            'questions': ONBOARDING_QUESTIONS,
+            'answers': answers,
+            'recommendations': [],
+            'show_recommendations': False,
+        },
+    )
+
+
+def _onboarding_answers(post_data) -> dict:
+    valid_values = {
+        question['name']: {value for value, _label in question['options']}
+        for question in ONBOARDING_QUESTIONS
+    }
+    answers = {}
+    for name, allowed in valid_values.items():
+        values = [value for value in post_data.getlist(name) if value in allowed]
+        if values:
+            answers[name] = values
+    return answers
+
+
+def _onboarding_recommendations(answers: dict) -> list[dict]:
+    selected_signals = {
+        value
+        for values in answers.values()
+        for value in values
+    }
+    scored = []
+    for habit in ONBOARDING_HABITS:
+        score = len(habit['signals'] & selected_signals)
+        if score:
+            scored.append((score, habit))
+    if len(scored) < 5:
+        seen = {habit['key'] for _score, habit in scored}
+        for habit in ONBOARDING_HABITS:
+            if habit['key'] not in seen:
+                scored.append((0, habit))
+                seen.add(habit['key'])
+            if len(scored) >= 5:
+                break
+    scored.sort(key=lambda item: (-item[0], item[1]['title']))
+    return [_with_display_unit(habit) for _score, habit in scored[:5]]
+
+
+def _with_display_unit(habit: dict) -> dict:
+    return {
+        **habit,
+        'target_label': _target_label(habit['target_value'], habit['target_unit']),
+    }
+
+
+def _target_label(value: int, unit: str) -> str:
+    if unit == 'minutes':
+        return f'{value} {_plural_ru(value, "минута", "минуты", "минут")}'
+    if unit == 'times':
+        return f'{value} {_plural_ru(value, "раз", "раза", "раз")}'
+    if unit == 'glasses':
+        return f'{value} {_plural_ru(value, "стакан", "стакана", "стаканов")}'
+    if unit == 'pages':
+        return f'{value} {_plural_ru(value, "страница", "страницы", "страниц")}'
+    return str(value)
+
+
+def _plural_ru(value: int, one: str, few: str, many: str) -> str:
+    value = abs(value)
+    if 11 <= value % 100 <= 14:
+        return many
+    if value % 10 == 1:
+        return one
+    if 2 <= value % 10 <= 4:
+        return few
+    return many
+
+
+def _create_onboarding_habits(user, selected_keys: list[str]) -> int:
+    catalog = {habit['key']: habit for habit in ONBOARDING_HABITS}
+    created_count = 0
+    for key in selected_keys:
+        habit_data = catalog.get(key)
+        if not habit_data:
+            continue
+        habit, created = Habit.objects.get_or_create(
+            user=user,
+            title=habit_data['title'],
+            defaults={
+                'description': habit_data['description'],
+                'icon': habit_data['icon'],
+                'color': habit_data['color'],
+                'target_type': habit_data['target_type'],
+                'target_value': habit_data['target_value'],
+                'target_unit': habit_data['target_unit'],
+            },
+        )
+        if not created and not habit.is_active:
+            habit.is_active = True
+            habit.save(update_fields=['is_active', 'updated_at'])
+        HabitSchedule.objects.get_or_create(habit=habit)
+        _attach_onboarding_tags(habit, habit_data['tags'])
+        if created:
+            created_count += 1
+    return created_count
+
+
+def _attach_onboarding_tags(habit: Habit, tag_names: list[str]) -> None:
+    for tag_name in tag_names:
+        tag, _ = Tag.objects.get_or_create(
+            name=tag_name,
+            defaults={'slug': _unique_tag_slug(tag_name)},
+        )
+        habit.tags.add(tag)
+
+
+def _unique_tag_slug(name: str) -> str:
+    from django.utils.text import slugify
+
+    base = slugify(name, allow_unicode=True) or 'tag'
+    candidate = base
+    suffix = 1
+    while Tag.objects.filter(slug=candidate).exists():
+        suffix += 1
+        candidate = f'{base}-{suffix}'
+    return candidate
+
+
+def _complete_onboarding(profile: UserProfile) -> None:
+    profile.onboarding_completed = True
+    profile.save(update_fields=['onboarding_completed', 'updated_at'])
 
 
 # ---------------------------------------------------------------------------
@@ -76,6 +506,10 @@ def landing(request):
 
 @login_required
 def dashboard(request):
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    if not profile.onboarding_completed:
+        return redirect('onboarding')
+
     today: date = timezone.localdate()
     now = timezone.localtime()
     selected_date = _parse_anchor_date(request.GET.get('date'), today)
