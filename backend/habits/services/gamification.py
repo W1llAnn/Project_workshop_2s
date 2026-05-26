@@ -73,6 +73,7 @@ _ACHIEVEMENT_ICONS = {
     'total_time': 'fa-clock',
     'xp': 'fa-star',
     'custom': 'fa-award',
+    'recommendation': 'fa-lightbulb-o',
 }
 
 

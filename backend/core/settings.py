@@ -174,6 +174,6 @@ CELERY_BEAT_SCHEDULE = {
     },
     'create_user_recommendations_task': {
         'task': 'habits.tasks.create_user_recommendations_task',
-        'schedule': crontab(hour='*/1'),
+        'schedule': crontab(minute=0, hour=12),
     },
 }
