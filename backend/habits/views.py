@@ -703,6 +703,7 @@ def calendar_view(request):
     view_mode = request.GET.get('view', 'week')
     if view_mode not in {'day', 'week', 'month'}:
         view_mode = 'week'
+
     habits = list(
         Habit.objects.filter(user=request.user, is_active=True).select_related('schedule').prefetch_related('tags')
     )
@@ -735,19 +736,6 @@ def calendar_view(request):
 
     def _pill_for(habit: Habit, day: date) -> dict | None:
         schedule = getattr(habit, 'schedule', None)
-        # Avoid projecting open-ended recurring habits indefinitely into
-        # future months. Existing unbounded schedules fall back to their
-        # start-date week; new schedules save explicit start/end bounds.
-        if schedule is None:
-            _, display_end = _week_bounds(getattr(habit, 'created_at', timezone.now()).date())
-            if day > display_end:
-                return None
-        elif schedule.end_date is None:
-            _, display_end = _week_bounds(schedule.start_date)
-            if day > display_end:
-                return None
-        if schedule and schedule.start_date and day < schedule.start_date:
-            return None
         if schedule and not schedule.is_due_on(day):
             return None
         log = log_lookup.get((habit.id, day))
@@ -779,6 +767,7 @@ def calendar_view(request):
             day_total = 0
             for habit in habits:
                 pill = _pill_for(habit, day)
+                print(habit, pill)
                 if pill is None:
                     continue
                 day_total += 1
@@ -855,7 +844,6 @@ def calendar_view(request):
                 f'{period_end.day} {_RUSSIAN_MONTHS[period_end.month - 1]} {period_start.year}'
             )
 
-    print(grid_days)
     context = {
         'today': today,
         'anchor': anchor,
@@ -872,7 +860,6 @@ def calendar_view(request):
         'wt_done': wt_done,
         'wt_total_real': wt_total_real,
         'add_form': HabitForm(),
-        'habit_form_anchor': anchor,
     }
     return render(request, 'calendar.html', context)
 

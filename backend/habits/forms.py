@@ -178,7 +178,7 @@ class HabitForm(forms.ModelForm):
             sched.end_date = anchor_date
             sched.days_of_week = str(anchor_date.isoweekday())
         else:
-            sched.start_date, sched.end_date = _week_bounds(anchor_date)
+            sched.start_date = anchor_date
         sched.save()
         # Tags by name (find or create).
         names_raw = self.cleaned_data.get('tag_names', '') or ''
