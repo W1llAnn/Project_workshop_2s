@@ -21,6 +21,7 @@ urlpatterns = [
     path('habits/<int:habit_id>/restore/', views.habit_restore, name='habit_restore'),
     path('habits/<int:habit_id>/destroy/', views.habit_destroy, name='habit_destroy'),
     path('habits/archive/', views.habit_archive_list, name='habit_archive'),
+    path('api/recommendations/add/', views.add_recommended_habits, name='add_recommended_habits'),
     path('analytics/', views.analytics, name='analytics'),
     path('notifications/', views.notifications_list, name='notifications_list'),
     path('notifications/mark-read/', views.notifications_mark_read, name='notifications_mark_read'),

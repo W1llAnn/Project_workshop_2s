@@ -15,6 +15,59 @@
     background: #22c55e;
     color: #fff;
   }
+
+  /* ----- recommendation modal ----- */
+  #rec-modal-overlay {
+    position: fixed; inset: 0; z-index: 1100;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,0,0,.4);
+    backdrop-filter: blur(6px);
+    opacity: 0; pointer-events: none;
+    transition: opacity .3s ease;
+  }
+  #rec-modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+  #rec-modal {
+    background: #fff; border-radius: 24px;
+    box-shadow: 0 24px 80px rgba(0,0,0,.22), 0 4px 16px rgba(0,0,0,.08);
+    padding: 32px 28px 24px;
+    max-width: 560px; width: calc(100vw - 32px);
+    max-height: calc(100vh - 48px); overflow-y: auto;
+    transform: translateY(24px) scale(.95); opacity: 0;
+    transition: transform .4s cubic-bezier(.22,1,.36,1), opacity .3s ease;
+  }
+  #rec-modal-overlay.open #rec-modal {
+    transform: translateY(0) scale(1); opacity: 1;
+  }
+
+  /* Recommendation card styling */
+  .rec-card {
+    border: 2px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 16px;
+    transition: border-color .2s ease, background .2s ease, box-shadow .2s ease;
+    cursor: pointer;
+  }
+  .rec-card:hover { border-color: #bbf7d0; background: #fafff5; }
+  .rec-card.selected {
+    border-color: #22c55e;
+    background: rgba(240, 253, 244, 0.85);
+    box-shadow: 0 4px 16px rgba(34, 197, 94, 0.1);
+  }
+  .rec-card .rec-check {
+    width: 22px; height: 22px; border-radius: 6px;
+    border: 2px solid #d1d5db; background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s ease; flex-shrink: 0;
+    color: transparent;
+  }
+  .rec-card.selected .rec-check {
+    border-color: #22c55e; background: #22c55e; color: #fff;
+  }
+  .rec-category-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 10px; border-radius: 8px; font-size: 11px; font-weight: 600;
+  }
 </style>
 {% endblock %}
 
@@ -36,107 +89,246 @@
     <img src="{% static 'img/mascot.png' %}" class="mascot-img w-24 h-24 rounded-3xl bg-white p-2 shadow-sm self-start md:self-auto" alt="Маскот HabitHamster">
   </div>
 
-  {% if show_recommendations %}
-    <form method="post" class="space-y-6">
-      {% csrf_token %}
-      <input type="hidden" name="action" value="add">
+  {# ===== Phase 1: Questions form (always visible) ===== #}
+  <form method="post" class="space-y-6" id="onboarding-form">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="recommend">
 
-      <section class="glass-card p-6 md:p-8">
-        <div class="flex items-start justify-between gap-4 mb-6">
-          <div>
-            <h2 class="font-display text-2xl font-bold">Вот привычки, которые могут тебе подойти</h2>
-            <p class="text-gray-500 text-sm mt-1">Выбери то, что хочешь сразу добавить в свой dashboard.</p>
+    <div class="grid gap-5">
+      {% for question in questions %}
+        <section class="glass-card p-6 md:p-7">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-9 h-9 rounded-2xl bg-green-100 text-green-700 flex items-center justify-center font-bold">
+              {{ forloop.counter }}
+            </div>
+            <h2 class="font-display text-xl font-bold">{{ question.title }}</h2>
           </div>
-          <div class="hidden sm:flex w-12 h-12 rounded-2xl bg-green-100 text-green-600 items-center justify-center">
-            <i class="fas fa-list-check text-xl"></i>
-          </div>
-        </div>
-
-        <div class="grid md:grid-cols-2 gap-4">
-          {% for habit in recommendations %}
-            <label class="onboarding-choice block cursor-pointer">
-              <input type="checkbox" name="habits" value="{{ habit.key }}" checked class="sr-only peer">
-              <div class="onboarding-card rounded-2xl border border-gray-200 bg-white p-4 transition hover:border-green-300 hover:shadow-sm peer-checked:border-green-300 peer-checked:bg-green-50/70 peer-checked:shadow-sm">
-                <div class="flex items-start gap-3">
-                  <span class="onboarding-check mt-1 w-5 h-5 rounded-md border border-gray-300 bg-white text-white flex items-center justify-center flex-shrink-0 transition">
+          <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {% for option in question.options %}
+              <label class="onboarding-choice block cursor-pointer">
+                <input type="{% if question.is_multi_select %}checkbox{% else %}radio{% endif %}" name="{{ question.name }}" value="{{ option.0 }}" class="sr-only peer">
+                <span class="onboarding-card rounded-2xl border border-gray-200 bg-white px-4 py-3 transition flex items-center gap-3 hover:border-green-300 hover:bg-green-50 peer-checked:border-green-300 peer-checked:bg-green-50/80 peer-checked:shadow-sm">
+                  <span class="onboarding-check w-5 h-5 {% if question.is_multi_select %}rounded-md{% else %}rounded-full{% endif %} border border-gray-300 bg-white text-white flex items-center justify-center flex-shrink-0 transition">
                     <i class="fas fa-check text-[11px] leading-none"></i>
                   </span>
-                <div class="w-11 h-11 rounded-2xl bg-green-50 text-green-600 flex items-center justify-center flex-shrink-0">
-                  <i class="fas fa-{{ habit.icon }}"></i>
-                </div>
-                <div class="min-w-0">
-                  <div class="font-bold text-gray-900">{{ habit.title }}</div>
-                  <p class="text-sm text-gray-500 mt-1 leading-relaxed">{{ habit.description }}</p>
-                  <div class="flex flex-wrap gap-2 mt-3">
-                    <span class="px-2 py-1 rounded-lg bg-gray-100 text-gray-600 text-xs">
-                      {{ habit.target_label }}
-                    </span>
-                    {% for tag in habit.tags %}
-                      <span class="px-2 py-1 rounded-lg bg-green-50 text-green-700 text-xs">{{ tag }}</span>
-                    {% endfor %}
-                  </div>
-                </div>
-                </div>
-              </div>
-            </label>
-          {% endfor %}
-        </div>
-      </section>
+                  <span class="text-sm font-semibold text-gray-700">{{ option.1 }}</span>
+                </span>
+              </label>
+            {% endfor %}
+          </div>
+        </section>
+      {% endfor %}
+    </div>
 
-      <div class="flex flex-col sm:flex-row gap-3 sm:justify-between">
-        <button type="submit" name="action" value="skip" class="px-5 py-3 rounded-xl border border-gray-200 bg-white text-gray-600 font-semibold hover:bg-gray-50">
-          Пропустить onboarding
-        </button>
-        <div class="flex flex-col sm:flex-row gap-3">
-          <a href="{% url 'onboarding' %}" class="px-5 py-3 rounded-xl border border-gray-200 bg-white text-gray-700 font-semibold text-center hover:bg-gray-50">
-            Изменить ответы
-          </a>
-          <button type="submit" class="px-6 py-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 shadow-sm">
-            Добавить выбранные
-          </button>
-        </div>
-      </div>
-    </form>
-  {% else %}
-    <form method="post" class="space-y-6">
-      {% csrf_token %}
-      <input type="hidden" name="action" value="recommend">
-
-      <div class="grid gap-5">
-        {% for question in questions %}
-          <section class="glass-card p-6 md:p-7">
-            <div class="flex items-center gap-3 mb-4">
-              <div class="w-9 h-9 rounded-2xl bg-green-100 text-green-700 flex items-center justify-center font-bold">
-                {{ forloop.counter }}
-              </div>
-              <h2 class="font-display text-xl font-bold">{{ question.title }}</h2>
-            </div>
-            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {% for option in question.options %}
-                <label class="onboarding-choice block cursor-pointer">
-                  <input type="checkbox" name="{{ question.name }}" value="{{ option.0 }}" class="sr-only peer">
-                  <span class="onboarding-card rounded-2xl border border-gray-200 bg-white px-4 py-3 transition flex items-center gap-3 hover:border-green-300 hover:bg-green-50 peer-checked:border-green-300 peer-checked:bg-green-50/80 peer-checked:shadow-sm">
-                    <span class="onboarding-check w-5 h-5 rounded-md border border-gray-300 bg-white text-white flex items-center justify-center flex-shrink-0 transition">
-                      <i class="fas fa-check text-[11px] leading-none"></i>
-                    </span>
-                    <span class="text-sm font-semibold text-gray-700">{{ option.1 }}</span>
-                  </span>
-                </label>
-              {% endfor %}
-            </div>
-          </section>
-        {% endfor %}
-      </div>
-
-      <div class="flex flex-col sm:flex-row gap-3 sm:justify-between">
-        <button type="submit" name="action" value="skip" class="px-5 py-3 rounded-xl border border-gray-200 bg-white text-gray-600 font-semibold hover:bg-gray-50">
-          Пропустить onboarding
-        </button>
-        <button type="submit" class="px-6 py-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 shadow-sm">
-          Показать рекомендации
-        </button>
-      </div>
-    </form>
-  {% endif %}
+    <div class="flex flex-col sm:flex-row gap-3 sm:justify-between">
+      <button type="submit" name="action" value="skip" class="px-5 py-3 rounded-xl border border-gray-200 bg-white text-gray-600 font-semibold hover:bg-gray-50">
+        Пропустить onboarding
+      </button>
+      <button type="submit" class="px-6 py-3 rounded-xl bg-green-500 text-white font-bold hover:bg-green-600 shadow-sm">
+        Показать рекомендации
+      </button>
+    </div>
+  </form>
 </div>
+
+{# ===== Phase 2: Recommendations Modal ===== #}
+{% if show_recommendations %}
+<div id="rec-modal-overlay">
+  <div id="rec-modal">
+    {# Header #}
+    <div class="flex items-start justify-between mb-5">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-400 to-green-600 text-white flex items-center justify-center shadow">
+          <i class="fas fa-wand-magic-sparkles text-lg"></i>
+        </div>
+        <div>
+          <h2 class="font-display text-xl font-bold text-gray-900">Привычки для тебя</h2>
+          <p class="text-sm text-gray-500 mt-0.5">Выбери, что хочешь добавить сразу</p>
+        </div>
+      </div>
+      <button id="rec-modal-close" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 flex-shrink-0 transition">
+        <i class="fas fa-times text-xs"></i>
+      </button>
+    </div>
+
+    {# Recommendation cards #}
+    <div class="space-y-3 mb-6" id="rec-cards">
+      {% for habit in recommendations %}
+      <div class="rec-card" data-rec-key="{{ habit.key }}"
+           data-rec='{{ habit.title|escapejs }}|||{{ habit.icon|escapejs }}|||{{ habit.color|escapejs }}|||{{ habit.target_type|escapejs }}|||{{ habit.target_value }}|||{{ habit.target_unit|escapejs }}|||{{ habit.description|escapejs }}|||{{ habit.tags|join:"," }}'>
+        <div class="flex items-start gap-3">
+          <div class="rec-check mt-0.5">
+            <i class="fas fa-check text-xs"></i>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-{{ habit.color }}-50 text-{{ habit.color }}-600 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-{{ habit.icon }} text-lg"></i>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="font-bold text-gray-900">{{ habit.title }}</div>
+            <p class="text-sm text-gray-500 mt-0.5 leading-relaxed">{{ habit.description }}</p>
+            <div class="flex flex-wrap gap-2 mt-2">
+              <span class="rec-category-badge bg-green-50 text-green-700">
+                <i class="fas fa-tag text-[10px]"></i>
+                {% for tag in habit.tags %}{{ tag }}{% if not forloop.last %}, {% endif %}{% endfor %}
+              </span>
+              <span class="rec-category-badge bg-blue-50 text-blue-600">
+                <i class="fas fa-clock text-[10px]"></i>
+                {{ habit.target_label }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {# Action buttons #}
+    <div class="flex flex-col sm:flex-row gap-3 sm:justify-between">
+      <button type="button" id="rec-skip-btn"
+              class="px-5 py-3 rounded-xl border border-gray-200 bg-white text-gray-600 font-semibold hover:bg-gray-50 transition">
+        Пропустить
+      </button>
+      <button type="button" id="rec-add-btn" disabled
+              class="px-6 py-3 rounded-xl bg-green-500 text-white font-bold shadow-sm transition disabled:opacity-40 disabled:cursor-not-allowed hover:bg-green-600 disabled:hover:bg-green-500">
+        <i class="fas fa-plus mr-1"></i> Добавить
+      </button>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  const overlay = document.getElementById('rec-modal-overlay');
+  if (!overlay) return;
+
+  const csrf = window.__csrfToken || '';
+  const ADD_URL = '{% url "add_recommended_habits" %}';
+  const SKIP_URL = '{% url "onboarding" %}';
+  const DASHBOARD_URL = '{% url "dashboard" %}';
+
+  const addBtn = document.getElementById('rec-add-btn');
+  const skipBtn = document.getElementById('rec-skip-btn');
+  const closeBtn = document.getElementById('rec-modal-close');
+  const cards = document.querySelectorAll('.rec-card');
+  const selected = new Set();
+
+  // Open modal on load with slight delay for animation
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      overlay.classList.add('open');
+    });
+  });
+
+  // Toggle card selection
+  cards.forEach(card => {
+    card.addEventListener('click', () => {
+      const key = card.getAttribute('data-rec-key');
+      if (selected.has(key)) {
+        selected.delete(key);
+        card.classList.remove('selected');
+      } else {
+        selected.add(key);
+        card.classList.add('selected');
+      }
+      updateAddBtn();
+    });
+  });
+
+  function updateAddBtn() {
+    addBtn.disabled = selected.size === 0;
+  }
+
+  // Parse card data
+  function getSelectedHabits() {
+    const habits = [];
+    cards.forEach(card => {
+      const key = card.getAttribute('data-rec-key');
+      if (!selected.has(key)) return;
+      const raw = card.getAttribute('data-rec');
+      const parts = raw.split('|||');
+      habits.push({
+        title: parts[0] || '',
+        icon: parts[1] || 'spa',
+        color: parts[2] || 'green',
+        target_type: parts[3] || 'check',
+        target_value: parseInt(parts[4]) || 1,
+        target_unit: parts[5] || 'times',
+        description: parts[6] || '',
+        tags: (parts[7] || '').split(',').filter(Boolean),
+      });
+    });
+    return habits;
+  }
+
+  // Add selected habits
+  addBtn.addEventListener('click', async () => {
+    const habits = getSelectedHabits();
+    if (!habits.length) return;
+
+    addBtn.disabled = true;
+    addBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-1"></i> Добавляем…';
+
+    try {
+      const resp = await fetch(ADD_URL, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrf,
+        },
+        body: JSON.stringify({ habits }),
+      });
+
+      if (resp.ok) {
+        // Also complete onboarding
+        await completeOnboarding();
+        window.location.href = DASHBOARD_URL;
+      } else {
+        addBtn.disabled = false;
+        addBtn.innerHTML = '<i class="fas fa-plus mr-1"></i> Добавить';
+      }
+    } catch (err) {
+      addBtn.disabled = false;
+      addBtn.innerHTML = '<i class="fas fa-plus mr-1"></i> Добавить';
+    }
+  });
+
+  // Skip — complete onboarding without adding
+  async function handleSkip() {
+    await completeOnboarding();
+    window.location.href = DASHBOARD_URL;
+  }
+
+  skipBtn.addEventListener('click', handleSkip);
+  closeBtn.addEventListener('click', handleSkip);
+
+  // Close on overlay click (outside modal)
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) handleSkip();
+  });
+
+  // Prevent ESC from also closing base.html modals
+  overlay.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      handleSkip();
+    }
+  });
+
+  // Complete onboarding via form POST
+  async function completeOnboarding() {
+    const form = new FormData();
+    form.append('csrfmiddlewaretoken', csrf);
+    form.append('action', 'skip');
+    await fetch(SKIP_URL, {
+      method: 'POST',
+      credentials: 'same-origin',
+      body: form,
+    });
+  }
+})();
+</script>
 {% endblock %}

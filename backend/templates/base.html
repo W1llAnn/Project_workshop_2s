@@ -716,6 +716,7 @@
         level_up:    'from-yellow-400 to-orange-500',
         streak:      'from-orange-400 to-red-500',
         system:      'from-blue-400 to-blue-600',
+        recommendation: 'from-purple-400 to-purple-600',
       };
 
       notifs.forEach(n => {
@@ -725,6 +726,20 @@
         div.setAttribute('data-is-read', n.is_read ? '1' : '0');
 
         const gradClass = iconColors[n.type] || 'from-green-400 to-green-700';
+        
+        let extraHtml = '';
+        if (n.type === 'recommendation' && n.extra_data && n.extra_data.create_data) {
+           const safeData = JSON.stringify(n.extra_data.create_data).replace(/"/g, '&quot;');
+           extraHtml = `
+             <div class="mt-2">
+               <button class="add-rec-btn px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 text-xs font-bold rounded-lg transition shadow-sm"
+                       data-create="${safeData}">
+                 <i class="fas fa-plus mr-1"></i> Добавить
+               </button>
+             </div>
+           `;
+        }
+
         div.innerHTML = `
           <div class="notif-icon bg-gradient-to-br ${gradClass}">
             <i class="fas ${n.icon || 'fa-bell'}"></i>
@@ -733,9 +748,45 @@
             <div class="text-sm font-semibold leading-snug">${escHtml(n.title)}</div>
             <div class="text-xs text-gray-500 mt-0.5 leading-snug line-clamp-2">${escHtml(n.message)}</div>
             <div class="text-xs text-gray-400 mt-1">${timeAgo(n.created_at)}</div>
+            ${extraHtml}
           </div>
           ${!n.is_read ? '<div class="notif-dot"></div>' : ''}
         `;
+
+                
+        const addBtn = div.querySelector('.add-rec-btn');
+        if (addBtn) {
+            addBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                addBtn.disabled = true;
+                addBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-1"></i> Добавляем…';
+                try {
+                    const createData = JSON.parse(addBtn.getAttribute('data-create').replace(/&quot;/g, '"'));
+                    const resp = await fetch('/api/recommendations/add/', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrf,
+                        },
+                        body: JSON.stringify({ habits: [createData] })
+                    });
+                    if (resp.ok) {
+                        addBtn.innerHTML = '<i class="fas fa-check mr-1"></i> Добавлено';
+                        addBtn.classList.replace('bg-green-100', 'bg-gray-100');
+                        addBtn.classList.replace('text-green-700', 'text-gray-500');
+                        setTimeout(() => window.location.href = '{% url "dashboard" %}', 500);
+                    } else {
+                        addBtn.disabled = false;
+                        addBtn.innerHTML = '<i class="fas fa-plus mr-1"></i> Добавить';
+                    }
+                } catch (err) {
+                    addBtn.disabled = false;
+                    addBtn.innerHTML = '<i class="fas fa-plus mr-1"></i> Добавить';
+                }
+            });
+        }
+
         div.addEventListener('click', () => openDetail(n.id));
         listEl.appendChild(div);
       });
