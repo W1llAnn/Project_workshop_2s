@@ -549,6 +549,7 @@ class Notification(models.Model):
         related_name='notifications',
     )
     icon = models.CharField(max_length=64, blank=True, default='fa-trophy')
+    extra_data = models.JSONField(default=dict, blank=True)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now)
 

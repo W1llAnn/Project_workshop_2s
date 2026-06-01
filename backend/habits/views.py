@@ -46,38 +46,77 @@ from django.utils.http import url_has_allowed_host_and_scheme
 ONBOARDING_QUESTIONS = [
     {
         'name': 'goal',
-        'title': 'Что ты хочешь улучшить?',
+        'title': 'Какая ваша цель?',
+        'is_multi_select': True,
         'options': [
-            ('fitness', 'Физическую форму'),
-            ('productivity', 'Продуктивность'),
-            ('mental_health', 'Ментальное здоровье'),
-            ('sleep', 'Сон и режим'),
-            ('learning', 'Обучение и развитие'),
-            ('discipline', 'Дисциплину'),
-            ('life_balance', 'Баланс жизни'),
+            ('goal_health', 'Улучшить здоровье', {'health': 0.8, 'fitness': 0.6}),
+            ('goal_prod', 'Повысить продуктивность', {'productivity': 1.0}),
+            ('goal_sleep', 'Улучшить сон', {'sleep': 1.0}),
+            ('goal_mind', 'Снизить стресс', {'mindfulness': 1.0}),
+            ('goal_disc', 'Развить дисциплину', {'self_development': 1.0}),
+            ('goal_learn', 'Учиться новому', {'learning': 1.0}),
         ],
     },
     {
-        'name': 'format',
-        'title': 'Что тебе ближе по формату?',
+        'name': 'sport_freq',
+        'title': 'Как часто вы занимаетесь спортом?',
+        'is_multi_select': False,
         'options': [
-            ('activity', 'Спорт и активность'),
-            ('reading', 'Чтение и обучение'),
-            ('calm', 'Медитация и спокойствие'),
-            ('planning', 'Планирование и организация'),
-            ('creativity', 'Творчество'),
-            ('social', 'Общение и социальность'),
+            ('sport_0', 'Никогда', {'fitness': 0.2}),
+            ('sport_1_2', '1–2 раза в неделю', {'fitness': 0.4}),
+            ('sport_3_5', '3–5 раз в неделю', {'fitness': 0.7}),
+            ('sport_7', 'Каждый день', {'fitness': 1.0}),
         ],
     },
     {
-        'name': 'time',
-        'title': 'Сколько времени ты реально готов уделять в день?',
+        'name': 'hard_to_do',
+        'title': 'Что вам сложнее всего делать регулярно?',
+        'is_multi_select': True,
         'options': [
-            ('5', '5 минут'),
-            ('10_15', '10-15 минут'),
-            ('30', '30 минут'),
-            ('60_plus', '1 час+'),
-            ('unknown', 'Пока не знаю'),
+            ('hard_wake', 'Просыпаться вовремя', {'sleep': 0.8}),
+            ('hard_focus', 'Концентрироваться', {'productivity': 0.8}),
+            ('hard_train', 'Тренироваться', {'fitness': 0.8}),
+            ('hard_water', 'Пить воду', {'health': 0.8}),
+            ('hard_read', 'Читать', {'learning': 0.8}),
+            ('hard_rest', 'Отдыхать', {'mindfulness': 0.8}),
+        ],
+    },
+    {
+        'name': 'free_time',
+        'title': 'Сколько свободного времени в день вы готовы уделять привычкам?',
+        'is_multi_select': False,
+        'options': [
+            ('time_5', '5 минут', {'time_5': 1.0}),
+            ('time_15', '15 минут', {'time_15': 1.0}),
+            ('time_30', '30 минут', {'time_30': 1.0}),
+            ('time_60', '1 час+', {'time_60': 1.0}),
+        ],
+    },
+    {
+        'name': 'time_of_day',
+        'title': 'В какое время суток вам проще выполнять задачи?',
+        'is_multi_select': True,
+        'options': [
+            ('tod_morning', 'Утро', {'tod_morning': 1.0}),
+            ('tod_day', 'День', {'tod_day': 1.0}),
+            ('tod_evening', 'Вечер', {'tod_evening': 1.0}),
+            ('tod_night', 'Ночью', {'tod_night': 1.0}),
+        ],
+    },
+    {
+        'name': 'interests',
+        'title': 'Какие привычки вам интересны?',
+        'is_multi_select': True,
+        'options': [
+            ('int_sport', 'Спорт', {'fitness': 1.0}),
+            ('int_read', 'Чтение', {'learning': 1.0}),
+            ('int_meditation', 'Медитация', {'mindfulness': 1.0}),
+            ('int_sleep', 'Сон', {'sleep': 1.0}),
+            ('int_food', 'Питание', {'health': 1.0}),
+            ('int_lang', 'Изучение языков', {'learning': 1.0}),
+            ('int_prod', 'Продуктивность', {'productivity': 1.0}),
+            ('int_finance', 'Финансы', {'finance': 1.0}),
+            ('int_self', 'Саморазвитие', {'self_development': 1.0}),
         ],
     },
 ]
@@ -94,7 +133,7 @@ ONBOARDING_HABITS = [
         'target_value': 10,
         'target_unit': 'minutes',
         'tags': ['растяжка', 'тело'],
-        'signals': {'fitness', 'activity', 'life_balance', '5', '10_15'},
+        'signals': {'fitness', 'health', 'time_5', 'time_15', 'tod_morning', 'tod_day'},
     },
     {
         'key': 'walk',
@@ -106,7 +145,7 @@ ONBOARDING_HABITS = [
         'target_value': 15,
         'target_unit': 'minutes',
         'tags': ['прогулка', 'здоровье'],
-        'signals': {'fitness', 'activity', 'mental_health', 'life_balance', '10_15', '30'},
+        'signals': {'fitness', 'health', 'mindfulness', 'time_15', 'time_30', 'time_60', 'tod_day', 'tod_evening'},
     },
     {
         'key': 'squats',
@@ -118,7 +157,7 @@ ONBOARDING_HABITS = [
         'target_value': 10,
         'target_unit': 'times',
         'tags': ['спорт', 'сила'],
-        'signals': {'fitness', 'activity', 'discipline', '5'},
+        'signals': {'fitness', 'self_development', 'time_5', 'tod_morning', 'tod_day', 'tod_evening'},
     },
     {
         'key': 'water',
@@ -130,7 +169,7 @@ ONBOARDING_HABITS = [
         'target_value': 1,
         'target_unit': 'glasses',
         'tags': ['вода', 'утро'],
-        'signals': {'fitness', 'sleep', 'discipline', 'life_balance', '5', 'unknown'},
+        'signals': {'health', 'sleep', 'self_development', 'time_5', 'tod_morning'},
     },
     {
         'key': 'read',
@@ -142,7 +181,7 @@ ONBOARDING_HABITS = [
         'target_value': 10,
         'target_unit': 'minutes',
         'tags': ['чтение', 'обучение'],
-        'signals': {'learning', 'reading', 'discipline', '10_15', '30'},
+        'signals': {'learning', 'self_development', 'time_15', 'time_30', 'tod_evening'},
     },
     {
         'key': 'review',
@@ -154,7 +193,7 @@ ONBOARDING_HABITS = [
         'target_value': 15,
         'target_unit': 'minutes',
         'tags': ['повторение', 'обучение'],
-        'signals': {'learning', 'reading', 'productivity', 'discipline', '10_15', '30', '60_plus'},
+        'signals': {'learning', 'productivity', 'time_15', 'time_30', 'time_60', 'tod_day', 'tod_evening'},
     },
     {
         'key': 'one_thought',
@@ -166,7 +205,7 @@ ONBOARDING_HABITS = [
         'target_value': 1,
         'target_unit': 'times',
         'tags': ['заметки', 'рефлексия'],
-        'signals': {'learning', 'mental_health', 'creativity', '5', 'unknown'},
+        'signals': {'mindfulness', 'learning', 'self_development', 'time_5', 'tod_evening', 'tod_night'},
     },
     {
         'key': 'meditation',
@@ -178,7 +217,7 @@ ONBOARDING_HABITS = [
         'target_value': 5,
         'target_unit': 'minutes',
         'tags': ['медитация', 'спокойствие'],
-        'signals': {'mental_health', 'calm', 'life_balance', '5', '10_15', 'unknown'},
+        'signals': {'mindfulness', 'sleep', 'health', 'time_5', 'time_15', 'tod_morning', 'tod_evening', 'tod_night'},
     },
     {
         'key': 'breathing',
@@ -190,7 +229,7 @@ ONBOARDING_HABITS = [
         'target_value': 5,
         'target_unit': 'minutes',
         'tags': ['дыхание', 'спокойствие'],
-        'signals': {'mental_health', 'calm', 'life_balance', '5', 'unknown'},
+        'signals': {'mindfulness', 'health', 'time_5', 'tod_morning', 'tod_day', 'tod_evening'},
     },
     {
         'key': 'gratitude',
@@ -202,7 +241,7 @@ ONBOARDING_HABITS = [
         'target_value': 1,
         'target_unit': 'times',
         'tags': ['дневник', 'благодарность'],
-        'signals': {'mental_health', 'calm', 'creativity', 'life_balance', '5', '10_15'},
+        'signals': {'mindfulness', 'self_development', 'time_5', 'time_15', 'tod_evening', 'tod_night'},
     },
     {
         'key': 'day_plan',
@@ -214,7 +253,7 @@ ONBOARDING_HABITS = [
         'target_value': 10,
         'target_unit': 'minutes',
         'tags': ['планирование', 'продуктивность'],
-        'signals': {'productivity', 'planning', 'discipline', '10_15', '30'},
+        'signals': {'productivity', 'self_development', 'time_15', 'tod_morning', 'tod_night'},
     },
     {
         'key': 'main_task',
@@ -226,7 +265,7 @@ ONBOARDING_HABITS = [
         'target_value': 1,
         'target_unit': 'times',
         'tags': ['фокус', 'продуктивность'],
-        'signals': {'productivity', 'planning', 'discipline', '5', '10_15', 'unknown'},
+        'signals': {'productivity', 'self_development', 'time_5', 'time_15', 'tod_morning'},
     },
     {
         'key': 'desk_reset',
@@ -238,7 +277,7 @@ ONBOARDING_HABITS = [
         'target_value': 5,
         'target_unit': 'minutes',
         'tags': ['порядок', 'организация'],
-        'signals': {'productivity', 'planning', 'discipline', 'life_balance', '5'},
+        'signals': {'productivity', 'mindfulness', 'time_5', 'tod_morning', 'tod_evening'},
     },
     {
         'key': 'phone_away',
@@ -250,7 +289,7 @@ ONBOARDING_HABITS = [
         'target_value': 1,
         'target_unit': 'times',
         'tags': ['сон', 'режим'],
-        'signals': {'sleep', 'discipline', 'calm', '5', '10_15'},
+        'signals': {'sleep', 'mindfulness', 'health', 'time_5', 'tod_night'},
     },
     {
         'key': 'evening_ritual',
@@ -262,7 +301,7 @@ ONBOARDING_HABITS = [
         'target_value': 15,
         'target_unit': 'minutes',
         'tags': ['сон', 'вечер'],
-        'signals': {'sleep', 'calm', 'life_balance', '10_15', '30'},
+        'signals': {'sleep', 'mindfulness', 'time_15', 'time_30', 'tod_evening', 'tod_night'},
     },
     {
         'key': 'creative_note',
@@ -274,7 +313,7 @@ ONBOARDING_HABITS = [
         'target_value': 10,
         'target_unit': 'minutes',
         'tags': ['творчество', 'идея'],
-        'signals': {'creativity', 'life_balance', 'learning', '10_15', '30'},
+        'signals': {'learning', 'mindfulness', 'time_15', 'tod_day', 'tod_evening'},
     },
     {
         'key': 'message_friend',
@@ -286,7 +325,31 @@ ONBOARDING_HABITS = [
         'target_value': 1,
         'target_unit': 'times',
         'tags': ['общение', 'баланс'],
-        'signals': {'social', 'life_balance', 'mental_health', '5', 'unknown'},
+        'signals': {'mindfulness', 'health', 'time_5', 'tod_day', 'tod_evening'},
+    },
+    {
+        'key': 'expense_tracking',
+        'title': 'Учет финансов',
+        'description': 'Записать свои траты за день.',
+        'icon': 'wallet',
+        'color': 'orange',
+        'target_type': 'minutes',
+        'target_value': 5,
+        'target_unit': 'minutes',
+        'tags': ['финансы', 'деньги'],
+        'signals': {'finance', 'self_development', 'time_5', 'tod_evening'},
+    },
+    {
+        'key': 'budget_review',
+        'title': 'Анализ бюджета',
+        'description': 'Распределить деньги на неделю и проверить остатки.',
+        'icon': 'chart-pie',
+        'color': 'blue',
+        'target_type': 'minutes',
+        'target_value': 15,
+        'target_unit': 'minutes',
+        'tags': ['финансы', 'планирование'],
+        'signals': {'finance', 'productivity', 'time_15', 'time_30', 'tod_morning', 'tod_day'},
     },
 ]
 
@@ -373,10 +436,11 @@ def onboarding(request):
 
 
 def _onboarding_answers(post_data) -> dict:
-    valid_values = {
-        question['name']: {value for value, _label in question['options']}
-        for question in ONBOARDING_QUESTIONS
-    }
+    valid_values = {}
+    for question in ONBOARDING_QUESTIONS:
+        allowed = {option[0] for option in question['options']}
+        valid_values[question['name']] = allowed
+
     answers = {}
     for name, allowed in valid_values.items():
         values = [value for value in post_data.getlist(name) if value in allowed]
@@ -386,26 +450,33 @@ def _onboarding_answers(post_data) -> dict:
 
 
 def _onboarding_recommendations(answers: dict) -> list[dict]:
-    selected_signals = {
-        value
-        for values in answers.values()
-        for value in values
-    }
+    # Calculate weighted user signals based on selected options
+    user_signals = {}
+    for question in ONBOARDING_QUESTIONS:
+        q_name = question['name']
+        selected_vals = answers.get(q_name, [])
+        for option_val, label, weights in question['options']:
+            if option_val in selected_vals:
+                for sig_name, sig_weight in weights.items():
+                    user_signals[sig_name] = user_signals.get(sig_name, 0.0) + sig_weight
+
     scored = []
     for habit in ONBOARDING_HABITS:
-        score = len(habit['signals'] & selected_signals)
-        if score:
+        score = sum(user_signals.get(sig, 0.0) for sig in habit['signals'])
+        if score > 0:
             scored.append((score, habit))
-    if len(scored) < 5:
+
+    if len(scored) < 3:
         seen = {habit['key'] for _score, habit in scored}
         for habit in ONBOARDING_HABITS:
             if habit['key'] not in seen:
                 scored.append((0, habit))
                 seen.add(habit['key'])
-            if len(scored) >= 5:
+            if len(scored) >= 3:
                 break
+
     scored.sort(key=lambda item: (-item[0], item[1]['title']))
-    return [_with_display_unit(habit) for _score, habit in scored[:5]]
+    return [_with_display_unit(habit) for _score, habit in scored[:3]]
 
 
 def _with_display_unit(habit: dict) -> dict:
@@ -1345,6 +1416,7 @@ def notifications_list(request):
             'icon': n.icon,
             'is_read': n.is_read,
             'achievement_id': n.achievement_id,
+            'extra_data': n.extra_data or {},
             'created_at': n.created_at.isoformat(),
         })
     return JsonResponse({'notifications': items, 'unread_count': unread_count})
@@ -1368,6 +1440,71 @@ def notifications_mark_read(request):
         updated = 0
     unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
     return JsonResponse({'updated': updated, 'unread_count': unread_count})
+
+
+@login_required
+@require_POST
+def add_recommended_habits(request):
+    """Create habits from recommendation data (JSON).
+
+    Used by both the onboarding recommendation modal and the notification
+    bell 'Add' button.  Expects::
+
+        { "habits": [
+            { "title": "...", "icon": "spa", "color": "green",
+              "target_type": "check", "target_value": 1,
+              "target_unit": "times", "tags": ["..."],
+              "description": "..." },
+            ...
+        ] }
+    """
+    try:
+        body = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({'detail': 'Некорректный JSON.'}, status=400)
+
+    habits_data = body.get('habits')
+    if not habits_data or not isinstance(habits_data, list):
+        return JsonResponse({'detail': 'Ожидается массив habits.'}, status=400)
+
+    created_ids = []
+    for item in habits_data[:10]:  # hard cap
+        title = (item.get('title') or '').strip()
+        if not title:
+            continue
+        habit, created = Habit.objects.get_or_create(
+            user=request.user,
+            title=title,
+            defaults={
+                'description': item.get('description', ''),
+                'icon': item.get('icon', 'spa'),
+                'color': item.get('color', 'green'),
+                'target_type': item.get('target_type', 'check'),
+                'target_value': item.get('target_value', 1),
+                'target_unit': item.get('target_unit', 'times'),
+            },
+        )
+        if not created and not habit.is_active:
+            habit.is_active = True
+            habit.save(update_fields=['is_active', 'updated_at'])
+        HabitSchedule.objects.get_or_create(habit=habit)
+        tag_names = item.get('tags', [])
+        for tag_name in tag_names:
+            tag_name = tag_name.strip()
+            if not tag_name:
+                continue
+            tag, _ = Tag.objects.get_or_create(
+                name=tag_name,
+                defaults={'slug': _unique_tag_slug(tag_name)},
+            )
+            habit.tags.add(tag)
+        if created:
+            created_ids.append(habit.id)
+
+    return JsonResponse({
+        'created_count': len(created_ids),
+        'habit_ids': created_ids,
+    })
 
 
 @login_required

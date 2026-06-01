@@ -23,10 +23,14 @@ def create_user_recommendations_task(user_id: int | None = None):
     for user in users:
         recommendation = recommend_for_user(user_id=user.pk, top_k=1)
 
-        message = f'Новая рекомендация привычки: {recommendation[0]["habit_title"]}, {recommendation[0]["explanation"]}'
+        try:
+            rec = recommendation[0]
+        except KeyError:
+            continue
+        message = f'Новая рекомендация привычки: {rec["habit_title"]}, {rec["explanation"]}'
         title = 'У вас новая рекомендация привычки'
         
-        exists_notification = Notification.objects.filter(user_id=user_id, title=title).last()
+        exists_notification = Notification.objects.filter(user_id=user.pk, title=title).last()
 
         # костыльно защищаемся от дублей
         if not exists_notification or exists_notification.message != message:
@@ -36,4 +40,20 @@ def create_user_recommendations_task(user_id: int | None = None):
                 title=title,
                 message=message,
                 icon='fa-lightbulb',
+                extra_data={
+                    'habit_title': rec['habit_title'],
+                    'habit_id': rec.get('habit_id'),
+                    'explanation': rec['explanation'],
+                    'score': rec.get('score'),
+                    'create_data': {
+                        'title': rec['habit_title'],
+                        'icon': 'spa',
+                        'color': 'green',
+                        'target_type': 'check',
+                        'target_value': 1,
+                        'target_unit': 'times',
+                        'tags': [],
+                        'description': rec.get('explanation', ''),
+                    },
+                },
             )
