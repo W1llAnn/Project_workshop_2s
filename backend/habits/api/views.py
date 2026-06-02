@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+import random
 
 from django.contrib.auth import authenticate, login, logout
 from django.utils import timezone
@@ -224,7 +225,7 @@ class HabitRecommendationView(APIView):
         try:
             from ml_recommendations.recommender import recommend_for_user
 
-            recommendations = recommend_for_user(user_id=request.user.id, top_k=1)
+            recommendations = recommend_for_user(user_id=request.user.id, top_k=10)
         except ImportError as exc:
             return Response({'detail': str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         except FileNotFoundError as exc:
@@ -235,7 +236,7 @@ class HabitRecommendationView(APIView):
         if not recommendations:
             return Response({'detail': 'No recommendations available.'}, status=status.HTTP_404_NOT_FOUND)
 
-        recommendation = recommendations[0]
+        recommendation = recommendations[random.randint(0, len(recommendations) - 1)]
         habit = (
             Habit.objects.filter(id=recommendation.get('habit_id'))
             .prefetch_related('tags')
