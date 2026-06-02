@@ -1,3 +1,4 @@
+import random
 from habits.models import Notification
 from ml_recommendations.recommender import recommend_for_user, train_model
 from celery import shared_task
@@ -21,11 +22,13 @@ def create_user_recommendations_task(user_id: int | None = None):
         users = users.filter(id=user_id)
 
     for user in users:
-        recommendation = recommend_for_user(user_id=user.pk, top_k=1)
+        recommendation = recommend_for_user(user_id=user.pk, top_k=5)
 
         try:
-            rec = recommendation[0]
-        except KeyError:
+            rec = recommendation[random.randint(0, 4)]
+            print(rec)
+        except IndexError:
+            print(f'skip for user_id={user.pk}')
             continue
         message = f'Новая рекомендация привычки: {rec["habit_title"]}, {rec["explanation"]}'
         title = 'У вас новая рекомендация привычки'
