@@ -132,7 +132,7 @@ class UserProfileAdmin(BrandedAdminMixin, admin.ModelAdmin):
             },
         ),
         ('Маскот', {'fields': (('mascot_name', 'mascot_mood'),)}),
-        ('Системное', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
+        ('Системное', {'fields': ('created_at', 'updated_at', 'onboarding_completed'), 'classes': ('collapse',)}),
     )
     actions = ('reset_xp_to_zero', 'reset_streaks')
 

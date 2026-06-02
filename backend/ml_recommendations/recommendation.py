@@ -26,20 +26,22 @@ from numpy.linalg import norm
 
 # Категории, которые используются в тесте онбординга
 ONBOARDING_CATEGORIES = [
-    'health', 'fitness', 'productivity', 'sleep', 
-    'mindfulness', 'self_development', 'learning', 'finance'
+    'health',
+    'productivity',
+    # 'sleep', 
+    'self_development',
+    'learning',
+    'mindfulness',
+    'sport',
 ]
 
 # Маппинг категорий теста на категории из БД (для совместимости с tags/init.sql)
 CATEGORY_MAPPING = {
     'health': 'здоровье',
-    'fitness': 'здоровье', 
     'productivity': 'продуктивность',
     'sleep': 'здоровье',
     'mindfulness': 'ментальное состояние',
-    'self_development': 'обучение',
     'learning': 'обучение',
-    'finance': 'продуктивность',  # или 'личная жизнь' — настраиваемо
 }
 
 # База привычек с их векторами (симуляция "БД" для рекомендаций)
@@ -49,6 +51,7 @@ HABIT_DATABASE: List[Dict] = [
     {
         'id': 'run_morning',
         'title': 'Утренняя пробежка 10 мин',
+        'icon': 'dumbbell',  # Спорт
         'tags': ['бег', 'зарядка'],
         'category': 'здоровье',
         'time_required': '10 мин',
@@ -58,6 +61,7 @@ HABIT_DATABASE: List[Dict] = [
     {
         'id': 'stretching',
         'title': 'Растяжка после пробуждения',
+        'icon': 'dumbbell',  # Спорт
         'tags': ['растяжка', 'зарядка'],
         'category': 'здоровье',
         'time_required': '5-10 мин',
@@ -67,6 +71,7 @@ HABIT_DATABASE: List[Dict] = [
     {
         'id': 'water_intake',
         'title': 'Выпивать стакан воды утром',
+        'icon': 'water',  # Вода
         'tags': ['вода'],
         'category': 'здоровье',
         'time_required': '1 мин',
@@ -78,6 +83,7 @@ HABIT_DATABASE: List[Dict] = [
     {
         'id': 'read_book',
         'title': 'Читать 10 страниц книги',
+        'icon': 'book',  # Чтение
         'tags': ['чтение (книги)'],
         'category': 'обучение',
         'time_required': '15 мин',
@@ -87,6 +93,7 @@ HABIT_DATABASE: List[Dict] = [
     {
         'id': 'language_practice',
         'title': 'Практиковать иностранный язык',
+        'icon': 'brain',  # Мышление
         'tags': ['изучение языка'],
         'category': 'обучение',
         'time_required': '15 мин',
@@ -96,6 +103,7 @@ HABIT_DATABASE: List[Dict] = [
     {
         'id': 'online_course',
         'title': 'Пройти урок онлайн-курса',
+        'icon': 'brain',  # Мышление
         'tags': ['онлайн-курс'],
         'category': 'обучение',
         'time_required': '30 мин',
@@ -107,6 +115,7 @@ HABIT_DATABASE: List[Dict] = [
     {
         'id': 'daily_planning',
         'title': 'Составлять план на день',
+        'icon': 'brain',  # Мышление
         'tags': ['планирование'],
         'category': 'продуктивность',
         'time_required': '5 мин',
@@ -115,7 +124,8 @@ HABIT_DATABASE: List[Dict] = [
     },
     {
         'id': 'deep_work_session',
-        'title': '25 минут фокус-работы (Pomodoro)',
+        'title': '25 минут фокус работы (Pomodoro)',
+        'icon': 'code',  # Работа
         'tags': ['deep work'],
         'category': 'продуктивность',
         'time_required': '25 мин',
@@ -125,6 +135,7 @@ HABIT_DATABASE: List[Dict] = [
     {
         'id': 'budget_tracking',
         'title': 'Записывать расходы дня',
+        'icon': 'brain',  # Мышление
         'tags': ['бюджет / учёт денег'],
         'category': 'продуктивность',
         'time_required': '5 мин',
@@ -136,6 +147,7 @@ HABIT_DATABASE: List[Dict] = [
     {
         'id': 'meditation_5min',
         'title': 'Медитация 5 минут',
+        'icon': 'spa',  # Йога (подходит для медитации)
         'tags': ['медитация', 'дыхательная практика'],
         'category': 'ментальное состояние',
         'time_required': '5 мин',
@@ -145,6 +157,7 @@ HABIT_DATABASE: List[Dict] = [
     {
         'id': 'gratitude_journal',
         'title': 'Записать 3 вещи, за которые благодарен',
+        'icon': 'heart',  # Здоровье (душевное)
         'tags': ['благодарность', 'дневник'],
         'category': 'ментальное состояние',
         'time_required': '5 мин',
@@ -154,6 +167,7 @@ HABIT_DATABASE: List[Dict] = [
     {
         'id': 'screen_free_hour',
         'title': 'Час без экрана перед сном',
+        'icon': 'leaf',  # Природа (отдых, спокойствие)
         'tags': ['отдых без экрана', 'цифровой детокс'],
         'category': 'ментальное состояние',
         'time_required': '60 мин',
@@ -165,9 +179,10 @@ HABIT_DATABASE: List[Dict] = [
     {
         'id': 'sleep_schedule',
         'title': 'Ложиться спать до 23:00',
+        'icon': 'moon',  # Сон
         'tags': ['ранний сон'],
         'category': 'здоровье',
-        'time_required': '0 мин',  # это ограничение, а не активность
+        'time_required': '0 мин',
         'best_time': ['night'],
         'vector': {'sleep': 1.0, 'health': 0.9, 'productivity': 0.6},
     },
@@ -176,6 +191,7 @@ HABIT_DATABASE: List[Dict] = [
     {
         'id': 'call_friend',
         'title': 'Позвонить другу или родным',
+        'icon': 'heart',  # Здоровье (социальные связи)
         'tags': ['общение (звонок)', 'друзья (вживую)'],
         'category': 'личная жизнь',
         'time_required': '15 мин',
@@ -224,7 +240,6 @@ def build_user_vector(test_results: Dict) -> np.ndarray:
                 "difficulties": ["concentration"],      # multi-select  
                 "free_time": "15 minutes",              # single-select
                 "preferred_time": ["evening"],          # multi-select
-                "interests": ["reading", "productivity"] # multi-select
             }
     
     Returns:
@@ -233,29 +248,39 @@ def build_user_vector(test_results: Dict) -> np.ndarray:
     # Инициализируем накопитель весов
     scores = {cat: 0.0 for cat in ONBOARDING_CATEGORIES}
     
-    # 1. Цели (Question 1) — multi-select с весами
-    goal_weights = {
-        'health': 0.8, 'fitness': 0.6,
-        'productivity': 1.0, 'sleep': 1.0,
-        'mindfulness': 1.0, 'self_development': 1.0, 'learning': 1.0
+    # 1. Интересы (Question 1) — multi-select, самый сильный сигнал
+    interest_weights = {
+        'sport': ('sport', 1.0),
+        'learning': ('learning', 1.0),
+        'health': ('health', 1.0),
+        'mindfulness': ('mindfulness', 1.0),
+        'productivity': ('productivity', 1.0),
+        'self_development': ('self_development', 1.0),
+        # 'reading': ('learning', 1.0),
+        # 'meditation': ('mindfulness', 1.0),
+        # 'sleep': ('sleep', 1.0),
+        # 'nutrition': ('health', 1.0), 'languages': ('learning', 1.0),
+        # 'productivity': ('productivity', 1.0), 
+        # 'finance': ('finance', 1.0), 'self_development': ('self_development', 1.0)
     }
-    for goal in test_results.get('goals', []):
-        if goal in goal_weights:
-            scores[goal] += goal_weights[goal]
+    for interest in test_results.get('goals', []):
+        if interest in interest_weights:
+            cat, weight = interest_weights[interest]
+            scores[cat] += weight * 1.5  # усиленный вес для явных интересов
     
     # 2. Частота спорта (Question 2) — single-select
     sport_weights = {
         'never': 0.2, '1-2 times/week': 0.4, 
         '3-5 times/week': 0.7, 'every day': 1.0
     }
-    sport_freq = test_results.get('sport_frequency', 'never')
-    scores['fitness'] += sport_weights.get(sport_freq, 0.2)
+    sport_freq = test_results.get('sport_frequency', 'never')[0]
+    scores['sport'] += sport_weights.get(sport_freq, 0.2)
     
     # 3. Сложности (Question 3) — multi-select
     difficulty_weights = {
-        'wake_up': ('sleep', 0.8),
+        'wake_up': ('health', 0.8),
         'concentration': ('productivity', 0.8),
-        'exercise': ('fitness', 0.8),
+        'exercise': ('sport', 0.8),
         'drink_water': ('health', 0.8),
         'read': ('learning', 0.8),
         'rest': ('mindfulness', 0.8),
@@ -263,20 +288,7 @@ def build_user_vector(test_results: Dict) -> np.ndarray:
     for diff in test_results.get('difficulties', []):
         if diff in difficulty_weights:
             cat, weight = difficulty_weights[diff]
-            scores[cat] += weight
-    
-    # 4. Интересы (Question 6) — multi-select, самый сильный сигнал
-    interest_weights = {
-        'sport': ('fitness', 1.0), 'reading': ('learning', 1.0),
-        'meditation': ('mindfulness', 1.0), 'sleep': ('sleep', 1.0),
-        'nutrition': ('health', 1.0), 'languages': ('learning', 1.0),
-        'productivity': ('productivity', 1.0), 
-        'finance': ('finance', 1.0), 'self_development': ('self_development', 1.0)
-    }
-    for interest in test_results.get('interests', []):
-        if interest in interest_weights:
-            cat, weight = interest_weights[interest]
-            scores[cat] += weight * 1.5  # усиленный вес для явных интересов
+            scores[cat] += weight    
     
     # Нормализуем итоговый вектор
     return normalize_vector(scores)
@@ -396,7 +408,6 @@ def recommend_habits(
         "difficulties": ["concentration"],
         "free_time": "15 minutes",
         "preferred_time": ["evening"],
-        "interests": ["reading", "productivity"]
     }
     """
     # 0. Подготовка
@@ -430,7 +441,7 @@ def recommend_habits(
         
         # Бустим привычки, которые явно в интересах пользователя
         if cfg.respect_user_interests:
-            user_interests = test_results.get('interests', [])
+            user_interests = test_results.get('goals', [])
             habit_tags = habit.get('tags', [])
             # Простая эвристика: если тег привычки совпадает с интересом
             interest_boost = 0.15 if any(
@@ -541,7 +552,6 @@ if __name__ == "__main__":
         "difficulties": ["concentration"],
         "free_time": "15 minutes",
         "preferred_time": ["evening"],
-        "interests": ["reading", "productivity"]
     }
     
     result = recommend_habits(sample_test)
