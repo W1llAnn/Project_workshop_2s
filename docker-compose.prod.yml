@@ -52,6 +52,7 @@ services:
     volumes:
       - media:/backend/media
       - staticfiles:/backend/staticfiles
+      - ./backend:/backend
     expose:
       - "8000"
     command:
