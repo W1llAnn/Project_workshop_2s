@@ -61,6 +61,11 @@
     <button onclick="window.openHabitModal ? window.openHabitModal('{{ selected_date|date:'Y-m-d' }}') : document.querySelector('[data-modal=add]').classList.add('open')" class="px-4 py-2 bg-green-500 text-white rounded-xl font-semibold hover:bg-green-600 flex items-center gap-2">
       <i class="fas fa-plus"></i> Новая привычка
     </button>
+    <button type="button"
+            onclick="window.openAiHabitModal ? window.openAiHabitModal('{{ selected_date|date:'Y-m-d' }}', this) : null"
+            class="px-4 py-2 bg-purple-500 text-white rounded-xl font-semibold hover:bg-purple-600 flex items-center gap-2 disabled:opacity-70 disabled:cursor-wait">
+      <i class="fas fa-wand-magic-sparkles"></i> + Новая привычка с ИИ
+    </button>
   </div>
 </header>
 

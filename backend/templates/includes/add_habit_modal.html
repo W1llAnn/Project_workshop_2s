@@ -157,6 +157,64 @@
     if (titleInput) setTimeout(() => titleInput.focus(), 50);
   };
 
+  window.openAiHabitModal = async function (dateValue, trigger) {
+    const modal = document.querySelector('[data-modal=add]');
+    if (!modal) return;
+
+    const originalHtml = trigger ? trigger.innerHTML : '';
+    if (trigger) {
+      trigger.disabled = true;
+      trigger.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> ИИ думает...';
+    }
+
+    try {
+      const response = await fetch('{% url "api-habit-recommendation" %}', {
+        method: 'GET',
+        credentials: 'same-origin',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.detail || 'Не удалось получить рекомендацию.');
+      }
+
+      const habit = data.habit || {};
+      const form = modal.querySelector('form');
+      const setValue = (name, value) => {
+        const field = form?.querySelector(`[name="${name}"]`);
+        if (field && value !== undefined && value !== null) field.value = value;
+      };
+      const setRadio = (name, value) => {
+        const field = form?.querySelector(`input[type="radio"][name="${name}"][value="${value}"]`);
+        if (!field) return;
+        field.checked = true;
+        field.dispatchEvent(new Event('change', { bubbles: true }));
+      };
+
+      setValue('title', habit.title || '');
+      setRadio('icon', habit.icon || 'spa');
+      setRadio('color', habit.color || 'purple');
+      setRadio('frequency_type', habit.frequency_type || 'daily');
+      setValue('target_type', habit.target_type || 'minutes');
+      setValue('target_value', habit.target_value || 15);
+      setValue('target_unit', habit.target_unit || 'minutes');
+      setValue('duration_minutes', habit.duration_minutes || habit.target_value || 15);
+      setValue('tag_names', habit.tag_names || '');
+      setValue('window_start', habit.window_start || '');
+      setValue('window_end', habit.window_end || '');
+
+      if (dateValue) setValue('schedule_anchor_date', dateValue);
+      window.openHabitModal(dateValue);
+    } catch (err) {
+      window.alert(err.message || 'Не удалось получить рекомендацию.');
+    } finally {
+      if (trigger) {
+        trigger.disabled = false;
+        trigger.innerHTML = originalHtml;
+      }
+    }
+  };
+
   // Quick-pick category chips: clicking sets the tag input and visually marks active.
   (function () {
     const modal = document.querySelector('[data-modal=add]');

@@ -18,6 +18,7 @@ urlpatterns = [
     path('auth/logout/', views.LogoutView.as_view(), name='api-logout'),
     path('auth/me/', views.MeView.as_view(), name='api-me'),
     path('dashboard/', views.DashboardView.as_view(), name='api-dashboard'),
+    path('recommendations/habit/', views.HabitRecommendationView.as_view(), name='api-habit-recommendation'),
     path('analytics/summary/', views.AnalyticsSummaryView.as_view(), name='api-analytics-summary'),
     path('achievements/me/', views.UserAchievementsView.as_view(), name='api-my-achievements'),
     path('insights/', views.UserInsightsView.as_view(), name='api-insights'),

@@ -217,6 +217,71 @@ class DashboardView(APIView):
         })
 
 
+class HabitRecommendationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            from ml_recommendations.recommender import recommend_for_user
+
+            recommendations = recommend_for_user(user_id=request.user.id, top_k=1)
+        except ImportError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        except FileNotFoundError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        except Exception as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        if not recommendations:
+            return Response({'detail': 'No recommendations available.'}, status=status.HTTP_404_NOT_FOUND)
+
+        recommendation = recommendations[0]
+        habit = (
+            Habit.objects.filter(id=recommendation.get('habit_id'))
+            .prefetch_related('tags')
+            .first()
+        )
+
+        habit_payload = {
+            'title': recommendation.get('habit_title', ''),
+            'icon': 'spa',
+            'color': 'purple',
+            'target_type': 'minutes',
+            'target_value': 15,
+            'target_unit': 'minutes',
+            'duration_minutes': 15,
+            'frequency_type': 'daily',
+            'tag_names': '',
+            'window_start': '',
+            'window_end': '',
+        }
+
+        if habit:
+            schedule = getattr(habit, 'schedule', None)
+            habit_payload.update({
+                'title': habit.title,
+                'icon': habit.icon,
+                'color': habit.color,
+                'target_type': habit.target_type,
+                'target_value': habit.target_value,
+                'target_unit': habit.target_unit,
+                'duration_minutes': habit.target_value if habit.target_type == 'minutes' else 15,
+                'frequency_type': schedule.frequency_type if schedule else 'daily',
+                'tag_names': ', '.join(habit.tags.values_list('name', flat=True)),
+                'window_start': schedule.window_start.strftime('%H:%M') if schedule and schedule.window_start else '',
+                'window_end': schedule.window_end.strftime('%H:%M') if schedule and schedule.window_end else '',
+            })
+
+        return Response({
+            'recommendation': {
+                'habit_id': recommendation.get('habit_id'),
+                'score': recommendation.get('score'),
+                'explanation': recommendation.get('explanation', ''),
+            },
+            'habit': habit_payload,
+        })
+
+
 class AnalyticsSummaryView(APIView):
     def get(self, request):
         period = request.query_params.get('period', 'week')
